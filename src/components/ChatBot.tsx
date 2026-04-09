@@ -127,7 +127,7 @@ const ChatBot = () => {
                 <div>
                   <div className="font-semibold text-primary-foreground text-sm">MedQueue Assistant</div>
                   <div className="text-primary-foreground/70 text-xs flex items-center gap-1">
-                    <span className="h-1.5 w-1.5 rounded-full bg-green-300 inline-block" />
+                    <span className="h-1.5 w-1.5 rounded-full bg-primary-foreground/60 inline-block animate-pulse-soft" />
                     Online
                   </div>
                 </div>
