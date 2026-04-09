@@ -25,6 +25,8 @@ const App = () => (
           <Route path="/queue" element={<QueueDashboard />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
+        <ChatBot />
+        </Routes>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
