@@ -1,16 +1,143 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Calendar, Clock, FileText, Users, ArrowRight, Shield, Zap } from "lucide-react";
 
-// IMPORTANT: Fully REPLACE this with your own code
-const PlaceholderIndex = () => {
-  // PLACEHOLDER: Replace this entire return statement with the user's app.
-  // The inline background color is intentionally not part of the design system.
+const features = [
+  {
+    icon: Calendar,
+    title: "Online Booking",
+    description: "Schedule appointments from anywhere. Choose your preferred clinic, doctor, and time slot.",
+  },
+  {
+    icon: Clock,
+    title: "Live Queue Tracking",
+    description: "See real-time wait times and your position in the queue. No more guessing.",
+  },
+  {
+    icon: FileText,
+    title: "Digital Health Records",
+    description: "Access your medical history across all connected facilities securely.",
+  },
+  {
+    icon: Users,
+    title: "Smart Queue Prediction",
+    description: "AI-powered wait time estimates so you can plan your visit better.",
+  },
+];
+
+const stats = [
+  { value: "60%", label: "Reduced Wait Times" },
+  { value: "10k+", label: "Patients Served" },
+  { value: "50+", label: "Connected Clinics" },
+  { value: "4.8★", label: "Patient Rating" },
+];
+
+const Index = () => {
   return (
-    <div className="flex min-h-screen items-center justify-center" style={{ backgroundColor: '#fcfbf8' }}>
-      <img data-lovable-blank-page-placeholder="REMOVE_THIS" src="/placeholder.svg" alt="Your app will live here!" />
+    <div className="min-h-screen">
+      {/* Hero */}
+      <section className="relative overflow-hidden hero-gradient py-24 md:py-32">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(255,255,255,0.1),transparent_60%)]" />
+        <div className="container mx-auto px-4 relative">
+          <div className="max-w-2xl animate-fade-up">
+            <div className="inline-flex items-center gap-2 rounded-full bg-primary-foreground/15 px-4 py-1.5 text-sm text-primary-foreground mb-6">
+              <Zap className="h-3.5 w-3.5" />
+              Smart Healthcare Access
+            </div>
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-primary-foreground leading-tight mb-6">
+              Skip the Queue.
+              <br />
+              <span className="opacity-90">Get Care Faster.</span>
+            </h1>
+            <p className="text-lg text-primary-foreground/80 mb-8 max-w-lg">
+              Book appointments, track queues in real time, and access your health records — all in one place.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <Link to="/booking">
+                <Button variant="hero-outline" size="lg" className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground/10 gap-2">
+                  Book Appointment
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </Link>
+              <Link to="/queue">
+                <Button variant="ghost" size="lg" className="text-primary-foreground hover:bg-primary-foreground/10">
+                  Check Queue Status
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Stats */}
+      <section className="relative -mt-12 z-10">
+        <div className="container mx-auto px-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {stats.map((stat) => (
+              <Card key={stat.label} className="card-shadow border-0 animate-fade-up-delay">
+                <CardContent className="p-6 text-center">
+                  <div className="text-3xl font-bold text-primary">{stat.value}</div>
+                  <div className="text-sm text-muted-foreground mt-1">{stat.label}</div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Features */}
+      <section className="py-24">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-16 animate-fade-up">
+            <h2 className="text-3xl font-bold text-foreground mb-4">Everything You Need</h2>
+            <p className="text-muted-foreground max-w-md mx-auto">
+              A complete healthcare access platform designed to make your clinic visits seamless.
+            </p>
+          </div>
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {features.map((feature, i) => (
+              <Card
+                key={feature.title}
+                className="group border-0 card-shadow hover:card-shadow-hover transition-all duration-300 hover:-translate-y-1"
+              >
+                <CardContent className="p-6">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-accent mb-4 group-hover:hero-gradient transition-colors duration-300">
+                    <feature.icon className="h-6 w-6 text-accent-foreground group-hover:text-primary-foreground transition-colors duration-300" />
+                  </div>
+                  <h3 className="font-semibold text-foreground mb-2">{feature.title}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{feature.description}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA */}
+      <section className="py-16 bg-accent/50">
+        <div className="container mx-auto px-4 text-center">
+          <Shield className="h-10 w-10 text-primary mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-foreground mb-3">Ready to transform your healthcare experience?</h2>
+          <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+            Join thousands of patients enjoying shorter waits and better care.
+          </p>
+          <Link to="/booking">
+            <Button variant="hero" size="lg" className="gap-2">
+              Get Started <ArrowRight className="h-4 w-4" />
+            </Button>
+          </Link>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="py-8 border-t">
+        <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
+          © 2026 MedQueue — Smart Healthcare Access System
+        </div>
+      </footer>
     </div>
   );
 };
-
-const Index = PlaceholderIndex;
 
 export default Index;
