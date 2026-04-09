@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Navbar from "@/components/Navbar";
+import ChatBot from "@/components/ChatBot";
 import Index from "./pages/Index";
 import Booking from "./pages/Booking";
 import QueueDashboard from "./pages/QueueDashboard";
@@ -24,6 +25,7 @@ const App = () => (
           <Route path="/queue" element={<QueueDashboard />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
+        <ChatBot />
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
