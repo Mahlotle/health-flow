@@ -1,12 +1,13 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Activity, Calendar, LayoutDashboard, Menu, X } from "lucide-react";
+import { Activity, Calendar, LayoutDashboard, FileText, Menu, X } from "lucide-react";
 import { useState } from "react";
 
 const navItems = [
   { to: "/", label: "Home", icon: Activity },
   { to: "/booking", label: "Book Appointment", icon: Calendar },
   { to: "/queue", label: "Queue Status", icon: LayoutDashboard },
+  { to: "/health", label: "My Health", icon: FileText },
 ];
 
 const Navbar = () => {

@@ -8,6 +8,7 @@ import ChatBot from "@/components/ChatBot";
 import Index from "./pages/Index";
 import Booking from "./pages/Booking";
 import QueueDashboard from "./pages/QueueDashboard";
+import MedicalHistory from "./pages/MedicalHistory";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -23,6 +24,7 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/booking" element={<Booking />} />
           <Route path="/queue" element={<QueueDashboard />} />
+          <Route path="/health" element={<MedicalHistory />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
         <ChatBot />
