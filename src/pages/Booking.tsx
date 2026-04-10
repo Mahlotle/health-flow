@@ -6,46 +6,24 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, CheckCircle2, Clock, MapPin, User, Phone, Stethoscope, Hash, Timer } from "lucide-react";
+import { CalendarIcon, CheckCircle2, Clock, MapPin, User, Phone, Stethoscope, Timer } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { Link } from "react-router-dom";
 
-const clinics = [
-  "City General Hospital",
-  "Greenwood Community Clinic",
-  "Riverside Health Center",
-  "Sunrise Medical Practice",
-];
+const clinics = ["City General Hospital", "Greenwood Community Clinic", "Riverside Health Center", "Sunrise Medical Practice"];
+const departments = ["General Practice", "Pediatrics", "Cardiology", "Dermatology", "Orthopedics"];
+const timeSlots = ["08:00", "08:30", "09:00", "09:30", "10:00", "10:30", "11:00", "11:30", "13:00", "13:30", "14:00", "14:30", "15:00", "15:30", "16:00"];
 
-const departments = [
-  "General Practice",
-  "Pediatrics",
-  "Cardiology",
-  "Dermatology",
-  "Orthopedics",
-];
-
-const timeSlots = [
-  "08:00", "08:30", "09:00", "09:30", "10:00", "10:30",
-  "11:00", "11:30", "13:00", "13:30", "14:00", "14:30",
-  "15:00", "15:30", "16:00",
-];
-
-const BookingTicket = ({
-  formData,
-  date,
-  queueNumber,
-  estimatedWaitMin,
-  onBookAnother,
-}: {
-  formData: { name: string; phone: string; clinic: string; department: string; timeSlot: string };
-  date: Date;
-  queueNumber: string;
-  estimatedWaitMin: number;
-  onBookAnother: () => void;
+const BookingTicket = ({ formData, date, queueNumber, estimatedWaitMin, onBookAnother }: {
+  formData: { clinic: string; department: string; timeSlot: string };
+  date: Date; queueNumber: string; estimatedWaitMin: number; onBookAnother: () => void;
 }) => {
+  const { profile } = useAuth();
   const [secondsLeft, setSecondsLeft] = useState(estimatedWaitMin * 60);
 
   useEffect(() => {
@@ -68,16 +46,11 @@ const BookingTicket = ({
           <h1 className="text-2xl font-bold text-foreground">Booking Confirmed!</h1>
           <p className="text-muted-foreground text-sm mt-1">Your appointment has been scheduled</p>
         </div>
-
-        {/* Ticket Card */}
         <Card className="border-0 card-shadow animate-fade-up-delay overflow-hidden">
-          {/* Ticket Header */}
           <div className="hero-gradient p-5 text-center">
             <p className="text-primary-foreground/80 text-xs uppercase tracking-widest mb-1">Queue Number</p>
             <div className="text-4xl font-bold text-primary-foreground tracking-wider">{queueNumber}</div>
           </div>
-
-          {/* Countdown Section */}
           <CardContent className="p-5 border-b border-border">
             <div className="text-center mb-3">
               <div className="flex items-center justify-center gap-2 mb-2">
@@ -87,83 +60,30 @@ const BookingTicket = ({
               <div className="text-3xl font-bold text-foreground font-mono">
                 {String(minutes).padStart(2, "0")}:{String(seconds).padStart(2, "0")}
               </div>
-              {secondsLeft === 0 && (
-                <Badge className="mt-2 bg-primary/15 text-primary border-primary/30" variant="outline">
-                  Your turn is coming up!
-                </Badge>
-              )}
+              {secondsLeft === 0 && <Badge className="mt-2 bg-primary/15 text-primary border-primary/30" variant="outline">Your turn is coming up!</Badge>}
             </div>
             <div className="space-y-1">
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>Progress</span>
-                <span>{Math.round(progressPct)}%</span>
-              </div>
+              <div className="flex justify-between text-xs text-muted-foreground"><span>Progress</span><span>{Math.round(progressPct)}%</span></div>
               <Progress value={progressPct} className="h-2" />
             </div>
           </CardContent>
-
-          {/* Ticket Details */}
           <CardContent className="p-5 space-y-4">
             <div className="grid grid-cols-2 gap-4">
-              <div className="flex items-start gap-2.5">
-                <User className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-                <div>
-                  <div className="text-xs text-muted-foreground">Patient</div>
-                  <div className="text-sm font-medium text-foreground">{formData.name}</div>
-                </div>
-              </div>
-              <div className="flex items-start gap-2.5">
-                <Phone className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-                <div>
-                  <div className="text-xs text-muted-foreground">Phone</div>
-                  <div className="text-sm font-medium text-foreground">{formData.phone || "N/A"}</div>
-                </div>
-              </div>
-              <div className="flex items-start gap-2.5">
-                <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-                <div>
-                  <div className="text-xs text-muted-foreground">Clinic</div>
-                  <div className="text-sm font-medium text-foreground">{formData.clinic}</div>
-                </div>
-              </div>
-              <div className="flex items-start gap-2.5">
-                <Stethoscope className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-                <div>
-                  <div className="text-xs text-muted-foreground">Department</div>
-                  <div className="text-sm font-medium text-foreground">{formData.department}</div>
-                </div>
-              </div>
-              <div className="flex items-start gap-2.5">
-                <CalendarIcon className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-                <div>
-                  <div className="text-xs text-muted-foreground">Date</div>
-                  <div className="text-sm font-medium text-foreground">{format(date, "PPP")}</div>
-                </div>
-              </div>
-              <div className="flex items-start gap-2.5">
-                <Clock className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-                <div>
-                  <div className="text-xs text-muted-foreground">Time Slot</div>
-                  <div className="text-sm font-medium text-foreground">{formData.timeSlot}</div>
-                </div>
-              </div>
+              <div className="flex items-start gap-2.5"><User className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" /><div><div className="text-xs text-muted-foreground">Patient</div><div className="text-sm font-medium text-foreground">{profile?.full_name}</div></div></div>
+              <div className="flex items-start gap-2.5"><Phone className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" /><div><div className="text-xs text-muted-foreground">Phone</div><div className="text-sm font-medium text-foreground">{profile?.phone || "N/A"}</div></div></div>
+              <div className="flex items-start gap-2.5"><MapPin className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" /><div><div className="text-xs text-muted-foreground">Clinic</div><div className="text-sm font-medium text-foreground">{formData.clinic}</div></div></div>
+              <div className="flex items-start gap-2.5"><Stethoscope className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" /><div><div className="text-xs text-muted-foreground">Department</div><div className="text-sm font-medium text-foreground">{formData.department}</div></div></div>
+              <div className="flex items-start gap-2.5"><CalendarIcon className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" /><div><div className="text-xs text-muted-foreground">Date</div><div className="text-sm font-medium text-foreground">{format(date, "PPP")}</div></div></div>
+              <div className="flex items-start gap-2.5"><Clock className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" /><div><div className="text-xs text-muted-foreground">Time Slot</div><div className="text-sm font-medium text-foreground">{formData.timeSlot}</div></div></div>
             </div>
           </CardContent>
-
-          {/* Dashed separator for ticket feel */}
-          <div className="relative px-5">
-            <div className="border-t-2 border-dashed border-border" />
-            <div className="absolute -left-3 -top-3 h-6 w-6 rounded-full bg-background" />
-            <div className="absolute -right-3 -top-3 h-6 w-6 rounded-full bg-background" />
-          </div>
-
+          <div className="relative px-5"><div className="border-t-2 border-dashed border-border" /><div className="absolute -left-3 -top-3 h-6 w-6 rounded-full bg-background" /><div className="absolute -right-3 -top-3 h-6 w-6 rounded-full bg-background" /></div>
           <CardContent className="p-5 text-center">
-            <p className="text-xs text-muted-foreground mb-4">
-              Please arrive 10 minutes before your scheduled time. Bring a valid ID document.
-            </p>
-            <Button variant="hero" onClick={onBookAnother} className="w-full">
-              Book Another Appointment
-            </Button>
+            <p className="text-xs text-muted-foreground mb-4">Please arrive 10 minutes before your scheduled time. Bring a valid ID document.</p>
+            <div className="flex gap-2">
+              <Button variant="hero" onClick={onBookAnother} className="flex-1">Book Another</Button>
+              <Link to="/patient" className="flex-1"><Button variant="outline" className="w-full">My Dashboard</Button></Link>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -172,47 +92,56 @@ const BookingTicket = ({
 };
 
 const Booking = () => {
+  const { user } = useAuth();
   const [date, setDate] = useState<Date>();
   const [booked, setBooked] = useState(false);
   const [queueNumber, setQueueNumber] = useState("");
   const [estimatedWaitMin, setEstimatedWaitMin] = useState(0);
-  const [formData, setFormData] = useState({
-    name: "",
-    phone: "",
-    clinic: "",
-    department: "",
-    timeSlot: "",
-  });
+  const [submitting, setSubmitting] = useState(false);
+  const [formData, setFormData] = useState({ clinic: "", department: "", timeSlot: "" });
   const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!date || !formData.name || !formData.clinic || !formData.department || !formData.timeSlot) {
+    if (!date || !formData.clinic || !formData.department || !formData.timeSlot) {
       toast({ title: "Please fill in all required fields", variant: "destructive" });
       return;
     }
-    setQueueNumber(`A-${Math.floor(Math.random() * 50 + 1).toString().padStart(3, "0")}`);
-    setEstimatedWaitMin(Math.floor(Math.random() * 30 + 10));
-    setBooked(true);
-    toast({ title: "Appointment booked successfully!" });
+    if (!user) return;
+
+    setSubmitting(true);
+    const qNum = `A-${Math.floor(Math.random() * 50 + 1).toString().padStart(3, "0")}`;
+    const waitMin = Math.floor(Math.random() * 30 + 10);
+
+    const { error } = await supabase.from("appointments").insert({
+      patient_id: user.id,
+      clinic: formData.clinic,
+      department: formData.department,
+      appointment_date: format(date, "yyyy-MM-dd"),
+      time_slot: formData.timeSlot,
+      queue_number: qNum,
+      estimated_wait_min: waitMin,
+    });
+
+    if (error) {
+      toast({ title: "Booking failed", description: error.message, variant: "destructive" });
+    } else {
+      setQueueNumber(qNum);
+      setEstimatedWaitMin(waitMin);
+      setBooked(true);
+      toast({ title: "Appointment booked successfully!" });
+    }
+    setSubmitting(false);
   };
 
   const handleBookAnother = () => {
     setBooked(false);
-    setFormData({ name: "", phone: "", clinic: "", department: "", timeSlot: "" });
+    setFormData({ clinic: "", department: "", timeSlot: "" });
     setDate(undefined);
   };
 
   if (booked && date) {
-    return (
-      <BookingTicket
-        formData={formData}
-        date={date}
-        queueNumber={queueNumber}
-        estimatedWaitMin={estimatedWaitMin}
-        onBookAnother={handleBookAnother}
-      />
-    );
+    return <BookingTicket formData={formData} date={date} queueNumber={queueNumber} estimatedWaitMin={estimatedWaitMin} onBookAnother={handleBookAnother} />;
   }
 
   return (
@@ -222,45 +151,26 @@ const Booking = () => {
           <h1 className="text-3xl font-bold text-foreground mb-2">Book an Appointment</h1>
           <p className="text-muted-foreground">Choose your clinic, department, and preferred time.</p>
         </div>
-
         <Card className="border-0 card-shadow animate-fade-up-delay">
-          <CardHeader>
-            <CardTitle>Appointment Details</CardTitle>
-          </CardHeader>
+          <CardHeader><CardTitle>Appointment Details</CardTitle></CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="grid md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Full Name *</Label>
-                  <Input id="name" placeholder="John Doe" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Phone Number</Label>
-                  <Input id="phone" placeholder="+27 XX XXX XXXX" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} />
-                </div>
-              </div>
-
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Clinic *</Label>
                   <Select value={formData.clinic} onValueChange={(v) => setFormData({ ...formData, clinic: v })}>
                     <SelectTrigger><SelectValue placeholder="Select clinic" /></SelectTrigger>
-                    <SelectContent>
-                      {clinics.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                    </SelectContent>
+                    <SelectContent>{clinics.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
                   <Label>Department *</Label>
                   <Select value={formData.department} onValueChange={(v) => setFormData({ ...formData, department: v })}>
                     <SelectTrigger><SelectValue placeholder="Select department" /></SelectTrigger>
-                    <SelectContent>
-                      {departments.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}
-                    </SelectContent>
+                    <SelectContent>{departments.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
               </div>
-
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Preferred Date *</Label>
@@ -280,15 +190,12 @@ const Booking = () => {
                   <Label>Time Slot *</Label>
                   <Select value={formData.timeSlot} onValueChange={(v) => setFormData({ ...formData, timeSlot: v })}>
                     <SelectTrigger><SelectValue placeholder="Select time" /></SelectTrigger>
-                    <SelectContent>
-                      {timeSlots.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-                    </SelectContent>
+                    <SelectContent>{timeSlots.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
               </div>
-
-              <Button type="submit" variant="hero" size="lg" className="w-full">
-                Confirm Booking
+              <Button type="submit" variant="hero" size="lg" className="w-full" disabled={submitting}>
+                {submitting ? "Booking..." : "Confirm Booking"}
               </Button>
             </form>
           </CardContent>
