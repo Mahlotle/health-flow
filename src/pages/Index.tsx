@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Calendar, Clock, FileText, Users, ArrowRight, Shield, Zap } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 const features = [
   {
@@ -34,6 +35,10 @@ const stats = [
 ];
 
 const Index = () => {
+  const { user, role } = useAuth();
+  const dashboardLink = user ? (role === "doctor" ? "/doctor" : "/patient") : "/auth";
+  const bookingLink = user ? "/booking" : "/auth";
+
   return (
     <div className="min-h-screen">
       {/* Hero */}
@@ -54,15 +59,15 @@ const Index = () => {
               Book appointments, track queues in real time, and access your health records — all in one place.
             </p>
             <div className="flex flex-wrap gap-3">
-              <Link to="/booking">
+              <Link to={bookingLink}>
                 <Button variant="hero-outline" size="lg" className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground/10 gap-2">
-                  Book Appointment
+                  {user ? "Book Appointment" : "Get Started"}
                   <ArrowRight className="h-4 w-4" />
                 </Button>
               </Link>
-              <Link to="/queue">
+              <Link to={user ? dashboardLink : "/queue"}>
                 <Button variant="ghost" size="lg" className="text-primary-foreground hover:bg-primary-foreground/10">
-                  Check Queue Status
+                  {user ? "My Dashboard" : "Check Queue Status"}
                 </Button>
               </Link>
             </div>
@@ -96,7 +101,7 @@ const Index = () => {
             </p>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {features.map((feature, i) => (
+            {features.map((feature) => (
               <Card
                 key={feature.title}
                 className="group border-0 card-shadow hover:card-shadow-hover transition-all duration-300 hover:-translate-y-1"
@@ -122,9 +127,9 @@ const Index = () => {
           <p className="text-muted-foreground mb-6 max-w-md mx-auto">
             Join thousands of patients enjoying shorter waits and better care.
           </p>
-          <Link to="/booking">
+          <Link to={user ? dashboardLink : "/auth"}>
             <Button variant="hero" size="lg" className="gap-2">
-              Get Started <ArrowRight className="h-4 w-4" />
+              {user ? "Go to Dashboard" : "Get Started"} <ArrowRight className="h-4 w-4" />
             </Button>
           </Link>
         </div>
