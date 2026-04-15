@@ -52,31 +52,44 @@ const CountdownTimer = ({ appointmentDate, timeSlot }: { appointmentDate: string
 
 const PatientDashboard = () => {
   const { user, profile } = useAuth();
+  const { toast } = useToast();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [records, setRecords] = useState<MedicalRecord[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const fetchData = useCallback(async () => {
     if (!user) return;
-    const fetchData = async () => {
-      const [apptRes, recRes] = await Promise.all([
-        supabase
-          .from("appointments")
-          .select("*")
-          .eq("patient_id", user.id)
-          .order("appointment_date", { ascending: true }),
-        supabase
-          .from("medical_records")
-          .select("*")
-          .eq("patient_id", user.id)
-          .order("created_at", { ascending: false }),
-      ]);
-      setAppointments(apptRes.data ?? []);
-      setRecords(recRes.data ?? []);
-      setLoading(false);
-    };
-    fetchData();
+    const [apptRes, recRes] = await Promise.all([
+      supabase
+        .from("appointments")
+        .select("*")
+        .eq("patient_id", user.id)
+        .order("appointment_date", { ascending: true }),
+      supabase
+        .from("medical_records")
+        .select("*")
+        .eq("patient_id", user.id)
+        .order("created_at", { ascending: false }),
+    ]);
+    setAppointments(apptRes.data ?? []);
+    setRecords(recRes.data ?? []);
+    setLoading(false);
   }, [user]);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
+
+  const cancelAppointment = async (id: string) => {
+    const { error } = await supabase
+      .from("appointments")
+      .update({ status: "cancelled" })
+      .eq("id", id);
+    if (error) {
+      toast({ title: "Failed to cancel", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Appointment cancelled" });
+      fetchData();
+    }
+  };
 
   const pendingAppts = appointments.filter(a => a.status === "pending" || a.status === "in_progress");
   const pastAppts = appointments.filter(a => a.status === "completed");
