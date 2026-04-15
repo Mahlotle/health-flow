@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -6,11 +6,16 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import {
   Timer, Calendar, MapPin, Stethoscope, Clock, FileText,
-  Pill, HeartPulse, ClipboardList, ArrowRight, User,
+  Pill, HeartPulse, ClipboardList, ArrowRight, User, XCircle,
 } from "lucide-react";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Appointment = Tables<"appointments">;
@@ -47,31 +52,44 @@ const CountdownTimer = ({ appointmentDate, timeSlot }: { appointmentDate: string
 
 const PatientDashboard = () => {
   const { user, profile } = useAuth();
+  const { toast } = useToast();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [records, setRecords] = useState<MedicalRecord[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const fetchData = useCallback(async () => {
     if (!user) return;
-    const fetchData = async () => {
-      const [apptRes, recRes] = await Promise.all([
-        supabase
-          .from("appointments")
-          .select("*")
-          .eq("patient_id", user.id)
-          .order("appointment_date", { ascending: true }),
-        supabase
-          .from("medical_records")
-          .select("*")
-          .eq("patient_id", user.id)
-          .order("created_at", { ascending: false }),
-      ]);
-      setAppointments(apptRes.data ?? []);
-      setRecords(recRes.data ?? []);
-      setLoading(false);
-    };
-    fetchData();
+    const [apptRes, recRes] = await Promise.all([
+      supabase
+        .from("appointments")
+        .select("*")
+        .eq("patient_id", user.id)
+        .order("appointment_date", { ascending: true }),
+      supabase
+        .from("medical_records")
+        .select("*")
+        .eq("patient_id", user.id)
+        .order("created_at", { ascending: false }),
+    ]);
+    setAppointments(apptRes.data ?? []);
+    setRecords(recRes.data ?? []);
+    setLoading(false);
   }, [user]);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
+
+  const cancelAppointment = async (id: string) => {
+    const { error } = await supabase
+      .from("appointments")
+      .update({ status: "cancelled" })
+      .eq("id", id);
+    if (error) {
+      toast({ title: "Failed to cancel", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Appointment cancelled" });
+      fetchData();
+    }
+  };
 
   const pendingAppts = appointments.filter(a => a.status === "pending" || a.status === "in_progress");
   const pastAppts = appointments.filter(a => a.status === "completed");
@@ -168,9 +186,34 @@ const PatientDashboard = () => {
                         <Calendar className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                         <span className="text-foreground">{appt.appointment_date} at {appt.time_slot}</span>
                       </div>
-                      <Badge variant={appt.status === "in_progress" ? "default" : "secondary"} className="text-xs">
-                        {appt.status === "in_progress" ? "In Progress" : "Pending"}
-                      </Badge>
+                      <div className="flex items-center justify-between">
+                        <Badge variant={appt.status === "in_progress" ? "default" : "secondary"} className="text-xs">
+                          {appt.status === "in_progress" ? "In Progress" : "Pending"}
+                        </Badge>
+                        {appt.status === "pending" && (
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-destructive hover:text-destructive gap-1">
+                                <XCircle className="h-3 w-3" /> Cancel
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Cancel Appointment?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  This will cancel your appointment at {appt.clinic} on {appt.appointment_date} at {appt.time_slot}. This action cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Keep Appointment</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => cancelAppointment(appt.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                  Yes, Cancel
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        )}
+                      </div>
                     </div>
                   </CardContent>
                 </Card>

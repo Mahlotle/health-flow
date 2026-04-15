@@ -12,6 +12,7 @@ import Booking from "./pages/Booking";
 import QueueDashboard from "./pages/QueueDashboard";
 import PatientDashboard from "./pages/PatientDashboard";
 import DoctorDashboard from "./pages/DoctorDashboard";
+import ProfileSettings from "./pages/ProfileSettings";
 import NotFound from "./pages/NotFound";
 import { Activity } from "lucide-react";
 
@@ -50,9 +51,9 @@ const AppRoutes = () => {
             <DoctorDashboard />
           </ProtectedRoute>
         } />
-        <Route path="/health" element={
-          <ProtectedRoute allowedRole="patient">
-            <PatientDashboard />
+        <Route path="/profile" element={
+          <ProtectedRoute>
+            <ProfileSettings />
           </ProtectedRoute>
         } />
         <Route path="*" element={<NotFound />} />

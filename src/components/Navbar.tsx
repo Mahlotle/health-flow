@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Activity, Calendar, LayoutDashboard, Menu, X, LogIn, LogOut, User, Stethoscope } from "lucide-react";
+import { Activity, Calendar, LayoutDashboard, Menu, X, LogIn, LogOut, User, Stethoscope, Settings } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import NotificationBell from "@/components/NotificationBell";
@@ -51,9 +51,12 @@ const Navbar = () => {
           {user && <NotificationBell />}
           {user ? (
             <div className="flex items-center gap-2 ml-2">
-              <span className="text-sm text-muted-foreground hidden lg:inline">
-                {profile?.full_name || user.email}
-              </span>
+              <Link to="/profile">
+                <Button variant="ghost" size="sm" className="gap-1.5">
+                  <Settings className="h-4 w-4" />
+                  <span className="hidden lg:inline">{profile?.full_name || user.email}</span>
+                </Button>
+              </Link>
               <Button variant="outline" size="sm" className="gap-2" onClick={signOut}>
                 <LogOut className="h-4 w-4" /> Sign Out
               </Button>
