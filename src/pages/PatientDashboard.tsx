@@ -186,9 +186,34 @@ const PatientDashboard = () => {
                         <Calendar className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                         <span className="text-foreground">{appt.appointment_date} at {appt.time_slot}</span>
                       </div>
-                      <Badge variant={appt.status === "in_progress" ? "default" : "secondary"} className="text-xs">
-                        {appt.status === "in_progress" ? "In Progress" : "Pending"}
-                      </Badge>
+                      <div className="flex items-center justify-between">
+                        <Badge variant={appt.status === "in_progress" ? "default" : "secondary"} className="text-xs">
+                          {appt.status === "in_progress" ? "In Progress" : "Pending"}
+                        </Badge>
+                        {appt.status === "pending" && (
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-destructive hover:text-destructive gap-1">
+                                <XCircle className="h-3 w-3" /> Cancel
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Cancel Appointment?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  This will cancel your appointment at {appt.clinic} on {appt.appointment_date} at {appt.time_slot}. This action cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Keep Appointment</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => cancelAppointment(appt.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                  Yes, Cancel
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        )}
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
