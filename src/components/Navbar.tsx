@@ -1,8 +1,9 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Activity, Calendar, LayoutDashboard, FileText, Menu, X, LogIn, LogOut, User, Stethoscope } from "lucide-react";
+import { Activity, Calendar, LayoutDashboard, Menu, X, LogIn, LogOut, User, Stethoscope } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import NotificationBell from "@/components/NotificationBell";
 
 const Navbar = () => {
   const location = useLocation();
@@ -47,6 +48,7 @@ const Navbar = () => {
               </Button>
             </Link>
           ))}
+          {user && <NotificationBell />}
           {user ? (
             <div className="flex items-center gap-2 ml-2">
               <span className="text-sm text-muted-foreground hidden lg:inline">
@@ -66,9 +68,12 @@ const Navbar = () => {
         </div>
 
         {/* Mobile toggle */}
-        <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setMobileOpen(!mobileOpen)}>
-          {mobileOpen ? <X /> : <Menu />}
-        </Button>
+        <div className="flex items-center gap-1 md:hidden">
+          {user && <NotificationBell />}
+          <Button variant="ghost" size="icon" onClick={() => setMobileOpen(!mobileOpen)}>
+            {mobileOpen ? <X /> : <Menu />}
+          </Button>
+        </div>
       </div>
 
       {/* Mobile menu */}

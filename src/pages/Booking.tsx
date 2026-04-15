@@ -1,12 +1,11 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, CheckCircle2, Clock, MapPin, User, Phone, Stethoscope, Timer } from "lucide-react";
+import { CalendarIcon, CheckCircle2, Clock, MapPin, User, Phone, Stethoscope, Timer, Navigation, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
@@ -14,8 +13,8 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
+import { useLocation as useGeoLocation } from "@/hooks/useLocation";
 
-const clinics = ["City General Hospital", "Greenwood Community Clinic", "Riverside Health Center", "Sunrise Medical Practice"];
 const departments = ["General Practice", "Pediatrics", "Cardiology", "Dermatology", "Orthopedics"];
 const timeSlots = ["08:00", "08:30", "09:00", "09:30", "10:00", "10:30", "11:00", "11:30", "13:00", "13:30", "14:00", "14:30", "15:00", "15:30", "16:00"];
 
@@ -100,6 +99,7 @@ const Booking = () => {
   const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState({ clinic: "", department: "", timeSlot: "" });
   const { toast } = useToast();
+  const { nearbyClinics, loading: locationLoading, error: locationError, location, requestLocation } = useGeoLocation();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -149,28 +149,81 @@ const Booking = () => {
       <div className="container mx-auto px-4 max-w-2xl">
         <div className="mb-8 animate-fade-up">
           <h1 className="text-3xl font-bold text-foreground mb-2">Book an Appointment</h1>
-          <p className="text-muted-foreground">Choose your clinic, department, and preferred time.</p>
+          <p className="text-muted-foreground">Find an Unjani Clinic near you and book your visit.</p>
         </div>
+
+        {/* Location prompt */}
+        {!location && (
+          <Card className="border-0 card-shadow mb-6 animate-fade-up">
+            <CardContent className="p-5 flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent shrink-0">
+                  <Navigation className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-foreground">Enable location to find clinics near you</p>
+                  <p className="text-xs text-muted-foreground">We'll sort Unjani Clinics by distance</p>
+                </div>
+              </div>
+              <Button variant="hero" size="sm" onClick={requestLocation} disabled={locationLoading}>
+                {locationLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Enable"}
+              </Button>
+            </CardContent>
+            {locationError && (
+              <div className="px-5 pb-3">
+                <p className="text-xs text-destructive">{locationError}</p>
+              </div>
+            )}
+          </Card>
+        )}
+
+        {location && (
+          <Card className="border-0 card-shadow mb-6 animate-fade-up">
+            <CardContent className="p-4 flex items-center gap-3">
+              <MapPin className="h-4 w-4 text-primary shrink-0" />
+              <p className="text-sm text-muted-foreground">
+                📍 Location enabled — clinics sorted by distance from you
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
         <Card className="border-0 card-shadow animate-fade-up-delay">
           <CardHeader><CardTitle>Appointment Details</CardTitle></CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="grid md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Clinic *</Label>
-                  <Select value={formData.clinic} onValueChange={(v) => setFormData({ ...formData, clinic: v })}>
-                    <SelectTrigger><SelectValue placeholder="Select clinic" /></SelectTrigger>
-                    <SelectContent>{clinics.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Department *</Label>
-                  <Select value={formData.department} onValueChange={(v) => setFormData({ ...formData, department: v })}>
-                    <SelectTrigger><SelectValue placeholder="Select department" /></SelectTrigger>
-                    <SelectContent>{departments.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
-                  </Select>
-                </div>
+              <div className="space-y-2">
+                <Label>Unjani Clinic *</Label>
+                <Select value={formData.clinic} onValueChange={(v) => setFormData({ ...formData, clinic: v })}>
+                  <SelectTrigger><SelectValue placeholder="Select a clinic near you" /></SelectTrigger>
+                  <SelectContent>
+                    {nearbyClinics.map((c) => (
+                      <SelectItem key={c.name} value={c.name}>
+                        <div className="flex items-center justify-between w-full gap-2">
+                          <span>{c.name}</span>
+                          {c.distance !== undefined && (
+                            <span className="text-xs text-muted-foreground ml-2">{c.distance} km</span>
+                          )}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {formData.clinic && (
+                  <p className="text-xs text-muted-foreground">
+                    {nearbyClinics.find(c => c.name === formData.clinic)?.province} · {nearbyClinics.find(c => c.name === formData.clinic)?.district}
+                  </p>
+                )}
               </div>
+
+              <div className="space-y-2">
+                <Label>Department *</Label>
+                <Select value={formData.department} onValueChange={(v) => setFormData({ ...formData, department: v })}>
+                  <SelectTrigger><SelectValue placeholder="Select department" /></SelectTrigger>
+                  <SelectContent>{departments.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Preferred Date *</Label>
