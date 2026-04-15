@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Activity, Calendar, LayoutDashboard, Menu, X, LogIn, LogOut, User, Stethoscope } from "lucide-react";
+import { Activity, Calendar, LayoutDashboard, Menu, X, LogIn, LogOut, User, Stethoscope, Settings } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import NotificationBell from "@/components/NotificationBell";
