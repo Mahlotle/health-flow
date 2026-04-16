@@ -65,6 +65,42 @@ export type Database = {
         }
         Relationships: []
       }
+      doctor_availability: {
+        Row: {
+          available_date: string
+          clinic: string
+          created_at: string
+          department: string
+          doctor_id: string
+          id: string
+          is_booked: boolean
+          time_slot: string
+          updated_at: string
+        }
+        Insert: {
+          available_date: string
+          clinic: string
+          created_at?: string
+          department: string
+          doctor_id: string
+          id?: string
+          is_booked?: boolean
+          time_slot: string
+          updated_at?: string
+        }
+        Update: {
+          available_date?: string
+          clinic?: string
+          created_at?: string
+          department?: string
+          doctor_id?: string
+          id?: string
+          is_booked?: boolean
+          time_slot?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       medical_records: {
         Row: {
           appointment_id: string | null
