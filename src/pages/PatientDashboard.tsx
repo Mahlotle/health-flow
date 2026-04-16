@@ -91,7 +91,7 @@ const PatientDashboard = () => {
     }
   };
 
-  const pendingAppts = appointments.filter(a => a.status === "pending" || a.status === "in_progress");
+  const pendingAppts = appointments.filter(a => ["pending", "pending_approval", "confirmed", "in_progress"].includes(a.status));
   const pastAppts = appointments.filter(a => a.status === "completed");
 
   if (loading) return <div className="min-h-screen flex items-center justify-center"><Clock className="h-8 w-8 animate-spin text-primary" /></div>;
@@ -187,10 +187,10 @@ const PatientDashboard = () => {
                         <span className="text-foreground">{appt.appointment_date} at {appt.time_slot}</span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <Badge variant={appt.status === "in_progress" ? "default" : "secondary"} className="text-xs">
-                          {appt.status === "in_progress" ? "In Progress" : "Pending"}
+                        <Badge variant={appt.status === "in_progress" ? "default" : appt.status === "pending_approval" ? "outline" : "secondary"} className={`text-xs ${appt.status === "pending_approval" ? "bg-warning/15 text-warning border-warning/30" : appt.status === "confirmed" ? "bg-info/15 text-info border-info/30" : ""}`}>
+                          {appt.status === "in_progress" ? "In Progress" : appt.status === "pending_approval" ? "Awaiting Approval" : appt.status === "confirmed" ? "Confirmed" : "Pending"}
                         </Badge>
-                        {appt.status === "pending" && (
+                        {(appt.status === "pending" || appt.status === "pending_approval") && (
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
                               <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-destructive hover:text-destructive gap-1">
