@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -16,6 +16,7 @@ export const useNotifications = () => {
   const { user } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   const fetchNotifications = useCallback(async () => {
     if (!user) return;
@@ -37,9 +38,15 @@ export const useNotifications = () => {
   // Realtime subscription
   useEffect(() => {
     if (!user) return;
-    const channelName = `notifications-${user.id}-${Date.now()}`;
+
+    // Clean up any existing channel first
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
+    }
+
     const channel = supabase
-      .channel(channelName)
+      .channel(`notif-${user.id}-${Math.random().toString(36).slice(2)}`)
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` },
@@ -50,7 +57,13 @@ export const useNotifications = () => {
         }
       )
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+
+    channelRef.current = channel;
+
+    return () => {
+      supabase.removeChannel(channel);
+      channelRef.current = null;
+    };
   }, [user]);
 
   const markAsRead = useCallback(async (id: string) => {
@@ -68,7 +81,7 @@ export const useNotifications = () => {
     setUnreadCount(0);
   }, [user, notifications]);
 
-  // Check and generate reminders on load (client-side trigger)
+  // Check and generate reminders on load
   useEffect(() => {
     if (!user) return;
     supabase.rpc("create_appointment_reminders").then(() => {
