@@ -91,7 +91,7 @@ const PatientDashboard = () => {
     }
   };
 
-  const pendingAppts = appointments.filter(a => a.status === "pending" || a.status === "in_progress");
+  const pendingAppts = appointments.filter(a => ["pending", "pending_approval", "confirmed", "in_progress"].includes(a.status));
   const pastAppts = appointments.filter(a => a.status === "completed");
 
   if (loading) return <div className="min-h-screen flex items-center justify-center"><Clock className="h-8 w-8 animate-spin text-primary" /></div>;
