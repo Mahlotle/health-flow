@@ -22,9 +22,9 @@ Be concise, friendly, and helpful. Use markdown formatting for clarity. If patie
 
 const QUICK_REPLIES = [
   "How do I book an appointment?",
-  "What departments are available?",
+  "What services are available?",
   "How do I check queue status?",
-  "What clinics can I visit?",
+  "Where are Unjani Clinics?",
 ];
 
 const ChatBot = () => {
