@@ -1,12 +1,24 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Clock, Users, Activity, TrendingDown } from "lucide-react";
+import { Clock, Users, TrendingDown } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import { supabase } from "@/integrations/supabase/client";
+import { UNJANI_SERVICES } from "@/lib/unjaniServices";
+import { useLocation } from "@/hooks/useLocation";
+
+interface AppointmentRow {
+  id: string;
+  clinic: string;
+  department: string;
+  status: string;
+  estimated_wait_min: number | null;
+  appointment_date: string;
+  time_slot: string;
+}
 
 interface QueueItem {
-  id: string;
   department: string;
   currentNumber: number;
   totalInQueue: number;
@@ -14,42 +26,84 @@ interface QueueItem {
   status: "low" | "moderate" | "busy";
 }
 
-const generateQueues = (): QueueItem[] => [
-  { id: "1", department: "General Consultations", currentNumber: 12 + Math.floor(Math.random() * 5), totalInQueue: 8 + Math.floor(Math.random() * 10), estimatedWait: 10 + Math.floor(Math.random() * 20), status: "low" },
-  { id: "2", department: "Chronic Disease Management", currentNumber: 5 + Math.floor(Math.random() * 3), totalInQueue: 15 + Math.floor(Math.random() * 8), estimatedWait: 25 + Math.floor(Math.random() * 15), status: "moderate" },
-  { id: "3", department: "HIV Testing & Counselling", currentNumber: 3 + Math.floor(Math.random() * 2), totalInQueue: 10 + Math.floor(Math.random() * 5), estimatedWait: 15 + Math.floor(Math.random() * 15), status: "low" },
-  { id: "4", department: "Maternal & Child Health", currentNumber: 8 + Math.floor(Math.random() * 4), totalInQueue: 12 + Math.floor(Math.random() * 6), estimatedWait: 20 + Math.floor(Math.random() * 15), status: "moderate" },
-  { id: "5", department: "Immunisations", currentNumber: 7 + Math.floor(Math.random() * 3), totalInQueue: 5 + Math.floor(Math.random() * 6), estimatedWait: 8 + Math.floor(Math.random() * 10), status: "low" },
-  { id: "6", department: "Family Planning", currentNumber: 4 + Math.floor(Math.random() * 3), totalInQueue: 6 + Math.floor(Math.random() * 5), estimatedWait: 12 + Math.floor(Math.random() * 10), status: "low" },
-];
-
 const statusConfig = {
   low: { label: "Short Wait", className: "bg-success/15 text-success border-success/30" },
   moderate: { label: "Moderate", className: "bg-warning/15 text-warning border-warning/30" },
   busy: { label: "Busy", className: "bg-destructive/15 text-destructive border-destructive/30" },
 };
 
-const clinics = [
-  "City General Hospital",
-  "Greenwood Community Clinic",
-  "Riverside Health Center",
-];
-
 const QueueDashboard = () => {
-  const [queues, setQueues] = useState<QueueItem[]>(generateQueues());
-  const [selectedClinic, setSelectedClinic] = useState(clinics[0]);
+  const { nearbyClinics } = useLocation();
+  const clinics = useMemo(() => nearbyClinics.map((c) => c.name), [nearbyClinics]);
+  const [selectedClinic, setSelectedClinic] = useState<string>("");
+  const [appointments, setAppointments] = useState<AppointmentRow[]>([]);
   const [lastUpdated, setLastUpdated] = useState(new Date());
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setQueues(generateQueues());
-      setLastUpdated(new Date());
-    }, 15000);
-    return () => clearInterval(interval);
-  }, []);
+    if (!selectedClinic && clinics.length) setSelectedClinic(clinics[0]);
+  }, [clinics, selectedClinic]);
+
+  const fetchAppointments = async (clinic: string) => {
+    const today = new Date().toISOString().split("T")[0];
+    const { data } = await supabase
+      .from("appointments")
+      .select("id, clinic, department, status, estimated_wait_min, appointment_date, time_slot")
+      .eq("clinic", clinic)
+      .eq("appointment_date", today);
+    setAppointments((data as AppointmentRow[]) || []);
+    setLastUpdated(new Date());
+  };
+
+  useEffect(() => {
+    if (!selectedClinic) return;
+    fetchAppointments(selectedClinic);
+    const interval = setInterval(() => fetchAppointments(selectedClinic), 15000);
+
+    const channel = supabase
+      .channel(`queue-${selectedClinic}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "appointments" },
+        () => fetchAppointments(selectedClinic)
+      )
+      .subscribe();
+
+    return () => {
+      clearInterval(interval);
+      supabase.removeChannel(channel);
+    };
+  }, [selectedClinic]);
+
+  const queues: QueueItem[] = useMemo(() => {
+    return UNJANI_SERVICES.map((service) => {
+      const forService = appointments.filter((a) => a.department === service);
+      const inProgress = forService.filter((a) => a.status === "in_progress").length;
+      const waiting = forService.filter((a) =>
+        ["approved", "confirmed", "checked_in", "pending"].includes(a.status)
+      );
+      const totalInQueue = waiting.length;
+      const avgWait = waiting.length
+        ? Math.round(
+            waiting.reduce((s, a) => s + (a.estimated_wait_min ?? 30), 0) / waiting.length
+          )
+        : 0;
+      const currentNumber = inProgress + forService.filter((a) => a.status === "completed").length;
+      const status: QueueItem["status"] =
+        totalInQueue >= 15 ? "busy" : totalInQueue >= 7 ? "moderate" : "low";
+      return {
+        department: service,
+        currentNumber,
+        totalInQueue,
+        estimatedWait: avgWait,
+        status,
+      };
+    });
+  }, [appointments]);
 
   const totalPatients = queues.reduce((s, q) => s + q.totalInQueue, 0);
-  const avgWait = Math.round(queues.reduce((s, q) => s + q.estimatedWait, 0) / queues.length);
+  const avgWait = queues.length
+    ? Math.round(queues.reduce((s, q) => s + q.estimatedWait, 0) / queues.length)
+    : 0;
 
   return (
     <div className="min-h-screen py-12">
@@ -57,15 +111,19 @@ const QueueDashboard = () => {
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-8 animate-fade-up">
           <div>
             <h1 className="text-3xl font-bold text-foreground mb-2">Queue Dashboard</h1>
-            <p className="text-muted-foreground">Real-time queue status across departments.</p>
+            <p className="text-muted-foreground">Live queue status from today's appointments.</p>
           </div>
           <div className="flex items-center gap-3">
             <Select value={selectedClinic} onValueChange={setSelectedClinic}>
-              <SelectTrigger className="w-[240px]">
-                <SelectValue />
+              <SelectTrigger className="w-[260px]">
+                <SelectValue placeholder="Select clinic" />
               </SelectTrigger>
               <SelectContent>
-                {clinics.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                {clinics.map((c) => (
+                  <SelectItem key={c} value={c}>
+                    {c}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -105,8 +163,10 @@ const QueueDashboard = () => {
                 <TrendingDown className="h-5 w-5 text-accent-foreground" />
               </div>
               <div>
-                <div className="text-2xl font-bold text-foreground">{queues.filter(q => q.status === "low").length}/{queues.length}</div>
-                <div className="text-xs text-muted-foreground">Low Wait Depts</div>
+                <div className="text-2xl font-bold text-foreground">
+                  {queues.filter((q) => q.status === "low").length}/{queues.length}
+                </div>
+                <div className="text-xs text-muted-foreground">Low Wait Services</div>
               </div>
             </CardContent>
           </Card>
@@ -118,18 +178,25 @@ const QueueDashboard = () => {
             const cfg = statusConfig[q.status];
             const loadPct = Math.min((q.totalInQueue / 25) * 100, 100);
             return (
-              <Card key={q.id} className="border-0 card-shadow hover:card-shadow-hover transition-all duration-300">
+              <Card
+                key={q.department}
+                className="border-0 card-shadow hover:card-shadow-hover transition-all duration-300"
+              >
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-base">{q.department}</CardTitle>
-                    <Badge variant="outline" className={cfg.className}>{cfg.label}</Badge>
+                    <Badge variant="outline" className={cfg.className}>
+                      {cfg.label}
+                    </Badge>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="flex justify-between text-sm">
                     <div>
                       <div className="text-muted-foreground">Now Serving</div>
-                      <div className="text-xl font-bold text-primary">#{q.currentNumber}</div>
+                      <div className="text-xl font-bold text-primary">
+                        {q.currentNumber > 0 ? `#${q.currentNumber}` : "—"}
+                      </div>
                     </div>
                     <div className="text-right">
                       <div className="text-muted-foreground">In Queue</div>
@@ -146,7 +213,9 @@ const QueueDashboard = () => {
                   <div className="flex items-center gap-1.5 text-sm">
                     <Clock className="h-3.5 w-3.5 text-muted-foreground" />
                     <span className="text-muted-foreground">Est. wait:</span>
-                    <span className="font-medium text-foreground">{q.estimatedWait} min</span>
+                    <span className="font-medium text-foreground">
+                      {q.estimatedWait > 0 ? `${q.estimatedWait} min` : "No wait"}
+                    </span>
                   </div>
                 </CardContent>
               </Card>
@@ -155,7 +224,7 @@ const QueueDashboard = () => {
         </div>
 
         <p className="text-xs text-muted-foreground text-center mt-8">
-          Last updated: {lastUpdated.toLocaleTimeString()} • Auto-refreshes every 15 seconds
+          Last updated: {lastUpdated.toLocaleTimeString()} • Live sync + 15s refresh
         </p>
       </div>
     </div>
