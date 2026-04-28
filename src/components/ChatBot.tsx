@@ -55,11 +55,11 @@ const ChatBot = () => {
     if (msg.includes("queue") || msg.includes("wait") || msg.includes("status") || msg.includes("how long")) {
       return "You can check real-time queue status on the **Queue Dashboard** page. It shows:\n- 🔢 **Now Serving** number per department\n- ⏱️ **Estimated wait times**\n- 📊 **Queue load** percentage\n- 🟢 **Status indicators** (Short Wait, Moderate, Busy)\n\nThe dashboard auto-refreshes every **15 seconds** with live data!";
     }
-    if (msg.includes("department") || msg.includes("specialt") || msg.includes("doctor")) {
-      return "We offer the following departments:\n- 🏥 **General Practice** — routine checkups & common illnesses\n- 👶 **Pediatrics** — children's health\n- ❤️ **Cardiology** — heart & cardiovascular care\n- 🧴 **Dermatology** — skin conditions\n- 🦴 **Orthopedics** — bone & joint issues\n\nChoose the one that best fits your needs when booking!";
+    if (msg.includes("service") || msg.includes("department") || msg.includes("specialt") || msg.includes("doctor") || msg.includes("offer")) {
+      return "Unjani Clinics offer these primary healthcare services:\n- 🩺 **General Consultations** — everyday illnesses & checkups\n- 💊 **Chronic Disease Management** — hypertension, diabetes, asthma\n- 🧪 **HIV Testing & Counselling**\n- 👨‍👩‍👧 **Family Planning**\n- 💉 **Immunisations**\n- 🤰 **Maternal & Child Health**\n- ❤️ **Wellness Screening** — BP, glucose, cholesterol\n- 🩹 **Minor Ailments & Injuries**\n\nChoose the one that best fits your needs when booking!";
     }
     if (msg.includes("clinic") || msg.includes("hospital") || msg.includes("location") || msg.includes("where")) {
-      return "Our connected clinics are:\n- 🏥 **City General Hospital**\n- 🌿 **Greenwood Community Clinic**\n- 🌊 **Riverside Health Center**\n- 🌅 **Sunrise Medical Practice**\n\nAll clinics support online booking and real-time queue tracking!";
+      return "**Unjani Clinics** are a nurse-led primary healthcare network across South Africa, with locations in:\n- 🏥 **Gauteng** (Tembisa, Mamelodi, Soweto, Alexandra, Ivory Park & more)\n- 🌊 **KwaZulu-Natal** (KwaMashu, Umlazi, Inanda, Pietermaritzburg)\n- 🌅 **Eastern Cape** (Mdantsane, Komani, Port Elizabeth)\n- 🌾 **Free State, Limpopo, North West & Mpumalanga**\n\nEnable location on the booking page to find the nearest clinic to you!";
     }
     if (msg.includes("hour") || msg.includes("time") || msg.includes("open") || msg.includes("when")) {
       return "Our clinics are generally open **Monday–Friday**, with appointments available from **08:00 to 16:00**. Time slots are in **30-minute intervals**, with a lunch break from **12:00–13:00**.\n\nBook early for shorter wait times! Morning slots tend to be less busy. 🌅";
