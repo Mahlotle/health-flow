@@ -346,9 +346,9 @@ const Booking = () => {
               </div>
 
               <div className="space-y-2">
-                <Label>Department *</Label>
+                <Label>Service *</Label>
                 <Select value={formData.department} onValueChange={(v) => setFormData({ ...formData, department: v })}>
-                  <SelectTrigger><SelectValue placeholder="Select department" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder="Select a service" /></SelectTrigger>
                   <SelectContent>{departments.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
