@@ -15,8 +15,9 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
 import { useLocation as useGeoLocation } from "@/hooks/useLocation";
+import { UNJANI_SERVICES } from "@/lib/unjaniServices";
 
-const departments = ["General Practice", "Pediatrics", "Cardiology", "Dermatology", "Orthopedics"];
+const departments = [...UNJANI_SERVICES];
 
 const BookingTicket = ({ formData, date, appointmentId, onBookAnother }: {
   formData: { clinic: string; department: string; timeSlot: string };
