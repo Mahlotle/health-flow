@@ -34,35 +34,31 @@ const QueueDashboard = () => {
   const { nearbyClinics } = useLocation();
   const clinics = useMemo(() => nearbyClinics.map((c) => c.name), [nearbyClinics]);
   const [selectedClinic, setSelectedClinic] = useState<string>("");
-  const [appointments, setAppointments] = useState<AppointmentRow[]>([]);
+  const [stats, setStats] = useState<StatRow[]>([]);
   const [lastUpdated, setLastUpdated] = useState(new Date());
 
   useEffect(() => {
     if (!selectedClinic && clinics.length) setSelectedClinic(clinics[0]);
   }, [clinics, selectedClinic]);
 
-  const fetchAppointments = async (clinic: string) => {
-    const today = new Date().toISOString().split("T")[0];
-    const { data } = await supabase
-      .from("appointments")
-      .select("id, clinic, department, status, estimated_wait_min, appointment_date, time_slot")
-      .eq("clinic", clinic)
-      .eq("appointment_date", today);
-    setAppointments((data as AppointmentRow[]) || []);
+  const fetchStats = async (clinic: string) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data } = await (supabase as any).rpc("get_queue_stats", { _clinic: clinic });
+    setStats((data as StatRow[]) || []);
     setLastUpdated(new Date());
   };
 
   useEffect(() => {
     if (!selectedClinic) return;
-    fetchAppointments(selectedClinic);
-    const interval = setInterval(() => fetchAppointments(selectedClinic), 15000);
+    fetchStats(selectedClinic);
+    const interval = setInterval(() => fetchStats(selectedClinic), 15000);
 
     const channel = supabase
-      .channel(`queue-${selectedClinic}`)
+      .channel(`queue-${selectedClinic}-${Date.now()}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "appointments" },
-        () => fetchAppointments(selectedClinic)
+        () => fetchStats(selectedClinic)
       )
       .subscribe();
 
@@ -74,18 +70,12 @@ const QueueDashboard = () => {
 
   const queues: QueueItem[] = useMemo(() => {
     return UNJANI_SERVICES.map((service) => {
-      const forService = appointments.filter((a) => a.department === service);
-      const inProgress = forService.filter((a) => a.status === "in_progress").length;
-      const waiting = forService.filter((a) =>
-        ["approved", "confirmed", "checked_in", "pending"].includes(a.status)
-      );
-      const totalInQueue = waiting.length;
-      const avgWait = waiting.length
-        ? Math.round(
-            waiting.reduce((s, a) => s + (a.estimated_wait_min ?? 30), 0) / waiting.length
-          )
-        : 0;
-      const currentNumber = inProgress + forService.filter((a) => a.status === "completed").length;
+      const row = stats.find((s) => s.department === service);
+      const totalInQueue = Number(row?.in_queue ?? 0);
+      const inProgress = Number(row?.in_progress ?? 0);
+      const completed = Number(row?.completed ?? 0);
+      const avgWait = Math.round(Number(row?.avg_wait ?? 0));
+      const currentNumber = inProgress + completed;
       const status: QueueItem["status"] =
         totalInQueue >= 15 ? "busy" : totalInQueue >= 7 ? "moderate" : "low";
       return {
@@ -96,7 +86,8 @@ const QueueDashboard = () => {
         status,
       };
     });
-  }, [appointments]);
+  }, [stats]);
+
 
   const totalPatients = queues.reduce((s, q) => s + q.totalInQueue, 0);
   const avgWait = queues.length
