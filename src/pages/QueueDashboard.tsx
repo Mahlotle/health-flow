@@ -15,11 +15,12 @@ interface QueueItem {
 }
 
 const generateQueues = (): QueueItem[] => [
-  { id: "1", department: "General Practice", currentNumber: 12 + Math.floor(Math.random() * 5), totalInQueue: 8 + Math.floor(Math.random() * 10), estimatedWait: 10 + Math.floor(Math.random() * 20), status: "low" },
-  { id: "2", department: "Pediatrics", currentNumber: 5 + Math.floor(Math.random() * 3), totalInQueue: 15 + Math.floor(Math.random() * 8), estimatedWait: 25 + Math.floor(Math.random() * 15), status: "moderate" },
-  { id: "3", department: "Cardiology", currentNumber: 3 + Math.floor(Math.random() * 2), totalInQueue: 20 + Math.floor(Math.random() * 5), estimatedWait: 40 + Math.floor(Math.random() * 20), status: "busy" },
-  { id: "4", department: "Dermatology", currentNumber: 8 + Math.floor(Math.random() * 4), totalInQueue: 5 + Math.floor(Math.random() * 6), estimatedWait: 8 + Math.floor(Math.random() * 10), status: "low" },
-  { id: "5", department: "Orthopedics", currentNumber: 7 + Math.floor(Math.random() * 3), totalInQueue: 12 + Math.floor(Math.random() * 6), estimatedWait: 20 + Math.floor(Math.random() * 15), status: "moderate" },
+  { id: "1", department: "General Consultations", currentNumber: 12 + Math.floor(Math.random() * 5), totalInQueue: 8 + Math.floor(Math.random() * 10), estimatedWait: 10 + Math.floor(Math.random() * 20), status: "low" },
+  { id: "2", department: "Chronic Disease Management", currentNumber: 5 + Math.floor(Math.random() * 3), totalInQueue: 15 + Math.floor(Math.random() * 8), estimatedWait: 25 + Math.floor(Math.random() * 15), status: "moderate" },
+  { id: "3", department: "HIV Testing & Counselling", currentNumber: 3 + Math.floor(Math.random() * 2), totalInQueue: 10 + Math.floor(Math.random() * 5), estimatedWait: 15 + Math.floor(Math.random() * 15), status: "low" },
+  { id: "4", department: "Maternal & Child Health", currentNumber: 8 + Math.floor(Math.random() * 4), totalInQueue: 12 + Math.floor(Math.random() * 6), estimatedWait: 20 + Math.floor(Math.random() * 15), status: "moderate" },
+  { id: "5", department: "Immunisations", currentNumber: 7 + Math.floor(Math.random() * 3), totalInQueue: 5 + Math.floor(Math.random() * 6), estimatedWait: 8 + Math.floor(Math.random() * 10), status: "low" },
+  { id: "6", department: "Family Planning", currentNumber: 4 + Math.floor(Math.random() * 3), totalInQueue: 6 + Math.floor(Math.random() * 5), estimatedWait: 12 + Math.floor(Math.random() * 10), status: "low" },
 ];
 
 const statusConfig = {

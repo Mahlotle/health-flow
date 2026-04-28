@@ -15,8 +15,9 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
 import { useLocation as useGeoLocation } from "@/hooks/useLocation";
+import { UNJANI_SERVICES } from "@/lib/unjaniServices";
 
-const departments = ["General Practice", "Pediatrics", "Cardiology", "Dermatology", "Orthopedics"];
+const departments = [...UNJANI_SERVICES];
 
 const BookingTicket = ({ formData, date, appointmentId, onBookAnother }: {
   formData: { clinic: string; department: string; timeSlot: string };
@@ -345,9 +346,9 @@ const Booking = () => {
               </div>
 
               <div className="space-y-2">
-                <Label>Department *</Label>
+                <Label>Service *</Label>
                 <Select value={formData.department} onValueChange={(v) => setFormData({ ...formData, department: v })}>
-                  <SelectTrigger><SelectValue placeholder="Select department" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder="Select a service" /></SelectTrigger>
                   <SelectContent>{departments.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
