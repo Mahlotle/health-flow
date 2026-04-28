@@ -1,9 +1,12 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { MessageCircle, X, Send, Bot, User, Loader2 } from "lucide-react";
+import { MessageCircle, X, Send, Bot, User, Loader2, CalendarPlus, Activity } from "lucide-react";
 import ReactMarkdown from "react-markdown";
+import { UNJANI_SERVICES } from "@/lib/unjaniServices";
+import { useLocation as useGeoLocation } from "@/hooks/useLocation";
 
 interface Message {
   id: string;
@@ -11,29 +14,22 @@ interface Message {
   content: string;
 }
 
-const SYSTEM_PROMPT = `You are MedQueue Assistant, an AI chatbot for a Smart Healthcare Access and Queue Management System. You help patients with:
-- Booking appointments (guide them to the /booking page)
-- Understanding queue status (guide them to the /queue page)
-- General healthcare facility questions
-- Explaining Unjani Clinic services: General Consultations, Chronic Disease Management, HIV Testing & Counselling, Family Planning, Immunisations, Maternal & Child Health, Wellness Screening, Minor Ailments & Injuries
-- Available clinics: Unjani Clinics across South Africa (Gauteng, KZN, Eastern Cape, Free State, Limpopo, North West, Mpumalanga)
-
-Be concise, friendly, and helpful. Use markdown formatting for clarity. If patients need to book, tell them to visit the Book Appointment page. If they want queue info, direct them to the Queue Dashboard.`;
-
 const QUICK_REPLIES = [
-  "How do I book an appointment?",
   "What services are available?",
-  "How do I check queue status?",
   "Where are Unjani Clinics?",
+  "How do I book an appointment?",
+  "How do I check queue status?",
 ];
 
 const ChatBot = () => {
+  const { nearbyClinics } = useGeoLocation();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "welcome",
       role: "assistant",
-      content: "👋 Hi! I'm your **MedQueue Assistant**. I can help you with booking appointments, checking queue status, or answering questions about our clinics. How can I help?",
+      content:
+        "👋 Hi! I'm your **MedQueue Assistant**. I can help you with booking, checking queue status, or finding an Unjani Clinic near you. How can I help?",
     },
   ]);
   const [input, setInput] = useState("");
@@ -46,34 +42,62 @@ const ChatBot = () => {
     }
   }, [messages, open]);
 
+  // Pre-compute service + clinic strings sourced from actual app data
+  const serviceList = useMemo(
+    () => UNJANI_SERVICES.map((s) => `- 🩺 **${s}**`).join("\n"),
+    []
+  );
+
+  const clinicsByProvince = useMemo(() => {
+    const groups: Record<string, string[]> = {};
+    for (const c of nearbyClinics) {
+      if (!groups[c.province]) groups[c.province] = [];
+      groups[c.province].push(c.name.replace(/^Unjani Clinic\s+/i, ""));
+    }
+    return groups;
+  }, [nearbyClinics]);
+
+  const clinicList = useMemo(() => {
+    return Object.entries(clinicsByProvince)
+      .map(([prov, names]) => `- 🏥 **${prov}** — ${names.join(", ")}`)
+      .join("\n");
+  }, [clinicsByProvince]);
+
   const getAIResponse = (userMessage: string): string => {
     const msg = userMessage.toLowerCase();
 
     if (msg.includes("book") || msg.includes("appointment") || msg.includes("schedule")) {
-      return "To book an appointment:\n1. Go to the **Book Appointment** page from the navigation bar\n2. Fill in your **name** and **phone number**\n3. Select your preferred **clinic** and **department**\n4. Pick a **date** and **time slot**\n5. Click **Confirm Booking**\n\nYou'll receive a **queue number** and an **estimated countdown** until you're helped! 🎫";
+      return "To book an appointment:\n1. Go to the **Book Appointment** page\n2. Enable **location** to find the nearest Unjani Clinic\n3. Choose a **clinic**, **service**, **date**, and available **time slot**\n4. Submit — the doctor will review and approve your request\n\nOnce approved, you'll get a **queue number** and a live **countdown** until you're helped. 🎫";
     }
     if (msg.includes("queue") || msg.includes("wait") || msg.includes("status") || msg.includes("how long")) {
-      return "You can check real-time queue status on the **Queue Dashboard** page. It shows:\n- 🔢 **Now Serving** number per department\n- ⏱️ **Estimated wait times**\n- 📊 **Queue load** percentage\n- 🟢 **Status indicators** (Short Wait, Moderate, Busy)\n\nThe dashboard auto-refreshes every **15 seconds** with live data!";
+      return "Check live queues on the **Queue Dashboard**:\n- 🔢 **Now Serving** number per service\n- ⏱️ **Estimated wait times**\n- 📊 **Queue load** percentage\n- 🟢 Status indicators (Short Wait, Moderate, Busy)\n\nAuto-refreshes every **15 seconds**.";
     }
-    if (msg.includes("service") || msg.includes("department") || msg.includes("specialt") || msg.includes("doctor") || msg.includes("offer")) {
-      return "Unjani Clinics offer these primary healthcare services:\n- 🩺 **General Consultations** — everyday illnesses & checkups\n- 💊 **Chronic Disease Management** — hypertension, diabetes, asthma\n- 🧪 **HIV Testing & Counselling**\n- 👨‍👩‍👧 **Family Planning**\n- 💉 **Immunisations**\n- 🤰 **Maternal & Child Health**\n- ❤️ **Wellness Screening** — BP, glucose, cholesterol\n- 🩹 **Minor Ailments & Injuries**\n\nChoose the one that best fits your needs when booking!";
+    if (msg.includes("service") || msg.includes("department") || msg.includes("offer") || msg.includes("specialt")) {
+      return `Unjani Clinics offer these primary healthcare services:\n${serviceList}\n\nPick the one that fits your visit when booking.`;
     }
-    if (msg.includes("clinic") || msg.includes("hospital") || msg.includes("location") || msg.includes("where")) {
-      return "**Unjani Clinics** are a nurse-led primary healthcare network across South Africa, with locations in:\n- 🏥 **Gauteng** (Tembisa, Mamelodi, Soweto, Alexandra, Ivory Park & more)\n- 🌊 **KwaZulu-Natal** (KwaMashu, Umlazi, Inanda, Pietermaritzburg)\n- 🌅 **Eastern Cape** (Mdantsane, Komani, Port Elizabeth)\n- 🌾 **Free State, Limpopo, North West & Mpumalanga**\n\nEnable location on the booking page to find the nearest clinic to you!";
+    if (
+      msg.includes("clinic") ||
+      msg.includes("hospital") ||
+      msg.includes("location") ||
+      msg.includes("where") ||
+      msg.includes("near")
+    ) {
+      const total = nearbyClinics.length;
+      return `**Unjani Clinics** is a nurse-led primary healthcare network across South Africa (${total} locations in the app):\n\n${clinicList}\n\n📍 Enable location on the **Book Appointment** page to sort clinics by distance from you.`;
     }
     if (msg.includes("hour") || msg.includes("time") || msg.includes("open") || msg.includes("when")) {
-      return "Our clinics are generally open **Monday–Friday**, with appointments available from **08:00 to 16:00**. Time slots are in **30-minute intervals**, with a lunch break from **12:00–13:00**.\n\nBook early for shorter wait times! Morning slots tend to be less busy. 🌅";
+      return "Unjani Clinics are generally open **Monday–Friday, 08:00–16:30**, with bookable **30-minute** slots. Availability depends on the specific clinic and service — the Book Appointment page only shows slots a nurse has actually opened.";
     }
     if (msg.includes("record") || msg.includes("history") || msg.includes("medical")) {
-      return "The **Digital Health Records** feature allows you to access your medical history across all connected facilities. This feature is coming soon and will include:\n- 📋 Visit summaries\n- 💊 Prescription history\n- 🧪 Lab results\n- 📄 Referral documents";
+      return "Your **Medical History** is available on the **Patient Dashboard** once a nurse or doctor has captured a visit. You'll see:\n- 📋 Visit summaries\n- 💊 Prescriptions\n- 🩺 Diagnoses\n- 📝 Clinical notes";
     }
-    if (msg.includes("hello") || msg.includes("hi") || msg.includes("hey") || msg.includes("help")) {
-      return "Hello! 😊 I'm here to help. Here's what I can assist with:\n- 📅 **Booking** an appointment\n- 📊 **Queue status** information\n- 🏥 **Clinic** & **department** details\n- ⏰ **Operating hours**\n- 📋 **Health records** info\n\nWhat would you like to know?";
+    if (msg.includes("hello") || msg.includes("hi ") || msg === "hi" || msg.includes("hey") || msg.includes("help")) {
+      return "Hello! 😊 I can help with:\n- 📅 **Booking** an appointment\n- 📊 **Queue** status\n- 🏥 Finding an **Unjani Clinic** near you\n- 🩺 Available **services**\n- ⏰ **Operating hours**\n\nWhat would you like to know?";
     }
-    if (msg.includes("thank") || msg.includes("thanks")) {
-      return "You're welcome! 😊 If you need anything else, don't hesitate to ask. Wishing you good health! 💚";
+    if (msg.includes("thank")) {
+      return "You're welcome! 💚 Wishing you good health.";
     }
-    return "I can help you with:\n- 📅 **Booking appointments** — how to schedule a visit\n- 📊 **Queue status** — check real-time wait times\n- 🏥 **Clinics & departments** — facility information\n- ⏰ **Operating hours** — when clinics are open\n\nCould you rephrase your question or pick one of the topics above?";
+    return `I can help with:\n- 📅 **Booking appointments**\n- 📊 **Queue status**\n- 🏥 **Unjani Clinic** locations\n- 🩺 **Services** offered\n- ⏰ **Operating hours**\n\nTry one of the quick replies below, or ask me directly.`;
   };
 
   const handleSend = async (text?: string) => {
@@ -85,8 +109,7 @@ const ChatBot = () => {
     setInput("");
     setLoading(true);
 
-    // Simulate slight delay for natural feel
-    await new Promise((r) => setTimeout(r, 800 + Math.random() * 600));
+    await new Promise((r) => setTimeout(r, 600 + Math.random() * 500));
 
     const response = getAIResponse(message);
     const botMsg: Message = { id: (Date.now() + 1).toString(), role: "assistant", content: response };
@@ -117,7 +140,7 @@ const ChatBot = () => {
       {/* Chat Window */}
       {open && (
         <div className="fixed bottom-6 right-6 z-50 w-[380px] max-w-[calc(100vw-2rem)] animate-fade-up">
-          <Card className="border-0 card-shadow overflow-hidden flex flex-col" style={{ height: "520px" }}>
+          <Card className="border-0 card-shadow overflow-hidden flex flex-col" style={{ height: "560px" }}>
             {/* Header */}
             <div className="hero-gradient p-4 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-3">
@@ -139,6 +162,22 @@ const ChatBot = () => {
               >
                 <X className="h-5 w-5" />
               </button>
+            </div>
+
+            {/* Action CTAs */}
+            <div className="px-3 py-2 flex gap-2 shrink-0 bg-card border-b border-border">
+              <Link to="/booking" className="flex-1" onClick={() => setOpen(false)}>
+                <Button size="sm" variant="hero" className="w-full gap-1.5">
+                  <CalendarPlus className="h-3.5 w-3.5" />
+                  Book
+                </Button>
+              </Link>
+              <Link to="/queue" className="flex-1" onClick={() => setOpen(false)}>
+                <Button size="sm" variant="outline" className="w-full gap-1.5">
+                  <Activity className="h-3.5 w-3.5" />
+                  Queue Status
+                </Button>
+              </Link>
             </div>
 
             {/* Messages */}
