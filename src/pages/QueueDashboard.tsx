@@ -8,14 +8,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { UNJANI_SERVICES } from "@/lib/unjaniServices";
 import { useLocation } from "@/hooks/useLocation";
 
-interface AppointmentRow {
-  id: string;
-  clinic: string;
+interface StatRow {
   department: string;
-  status: string;
-  estimated_wait_min: number | null;
-  appointment_date: string;
-  time_slot: string;
+  in_queue: number;
+  in_progress: number;
+  completed: number;
+  avg_wait: number;
 }
 
 interface QueueItem {
