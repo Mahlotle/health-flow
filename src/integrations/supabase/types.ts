@@ -249,6 +249,16 @@ export type Database = {
     }
     Functions: {
       create_appointment_reminders: { Args: never; Returns: undefined }
+      get_queue_stats: {
+        Args: { _clinic: string }
+        Returns: {
+          avg_wait: number
+          completed: number
+          department: string
+          in_progress: number
+          in_queue: number
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
