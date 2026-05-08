@@ -20,29 +20,51 @@ const Auth = () => {
   const [phone, setPhone] = useState("");
   const [selectedRole, setSelectedRole] = useState<"patient" | "doctor">("patient");
   const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState<{ title: string; description: string } | null>(null);
 
   if (loading) return <div className="min-h-screen flex items-center justify-center"><Activity className="h-8 w-8 animate-spin text-primary" /></div>;
   if (user && role) return <Navigate to={role === "doctor" ? "/doctor" : "/patient"} replace />;
 
+  const showError = (err: unknown, ctx: "login" | "signup") => {
+    const friendly = getFriendlyError(err, ctx);
+    setFormError(friendly);
+    toast({ title: friendly.title, description: friendly.description, variant: "destructive" });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setFormError(null);
     setSubmitting(true);
 
-    if (isLogin) {
-      const { error } = await signIn(email, password);
-      if (error) toast({ title: "Login failed", description: error.message, variant: "destructive" });
-    } else {
-      if (!fullName.trim()) {
-        toast({ title: "Please enter your full name", variant: "destructive" });
-        setSubmitting(false);
-        return;
-      }
-      const { error } = await signUp(email, password, fullName, phone, selectedRole);
-      if (error) {
-        toast({ title: "Sign up failed", description: error.message, variant: "destructive" });
+    try {
+      if (isLogin) {
+        if (!email.trim() || !password) {
+          setFormError({ title: "Missing details", description: "Please enter both your email and password to sign in." });
+          setSubmitting(false);
+          return;
+        }
+        const { error } = await signIn(email, password);
+        if (error) showError(error, "login");
       } else {
-        toast({ title: "Account created!", description: "You can now use MedQueue." });
+        if (!fullName.trim()) {
+          setFormError({ title: "Full name required", description: "Please enter your full name so clinic staff can identify you." });
+          setSubmitting(false);
+          return;
+        }
+        if (password.length < 6) {
+          setFormError({ title: "Password too short", description: "Your password must be at least 6 characters long." });
+          setSubmitting(false);
+          return;
+        }
+        const { error } = await signUp(email, password, fullName, phone, selectedRole);
+        if (error) {
+          showError(error, "signup");
+        } else {
+          toast({ title: "Account created!", description: "Welcome to MedQueue. You can now book appointments and skip the queue." });
+        }
       }
+    } catch (err) {
+      showError(err, isLogin ? "login" : "signup");
     }
     setSubmitting(false);
   };
