@@ -58,31 +58,56 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string, fullName: string, phone: string, selectedRole: AppRole) => {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { full_name: fullName },
-        emailRedirectTo: window.location.origin,
-      },
-    });
-    if (error) return { error };
-
-    if (data.user) {
-      // Insert role
-      await supabase.from("user_roles").insert({ user_id: data.user.id, role: selectedRole });
-      // Update profile with phone
-      await supabase.from("profiles").update({ phone, full_name: fullName }).eq("user_id", data.user.id);
-      setRole(selectedRole);
-      setProfile({ full_name: fullName, phone });
+  // Retry helper for transient network failures (e.g., "Failed to fetch")
+  const withRetry = async <T,>(fn: () => Promise<T>, attempts = 3, delayMs = 600): Promise<T> => {
+    let lastErr: unknown;
+    for (let i = 0; i < attempts; i++) {
+      try {
+        return await fn();
+      } catch (err) {
+        lastErr = err;
+        const msg = err instanceof Error ? err.message.toLowerCase() : "";
+        const isNetwork = msg.includes("failed to fetch") || msg.includes("network") || msg.includes("timeout");
+        if (!isNetwork || i === attempts - 1) throw err;
+        await new Promise((r) => setTimeout(r, delayMs * (i + 1)));
+      }
     }
-    return { error: null };
+    throw lastErr;
+  };
+
+  const signUp = async (email: string, password: string, fullName: string, phone: string, selectedRole: AppRole) => {
+    try {
+      const { data, error } = await withRetry(() =>
+        supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: { full_name: fullName },
+            emailRedirectTo: window.location.origin,
+          },
+        }),
+      );
+      if (error) return { error };
+
+      if (data.user) {
+        await supabase.from("user_roles").insert({ user_id: data.user.id, role: selectedRole });
+        await supabase.from("profiles").update({ phone, full_name: fullName }).eq("user_id", data.user.id);
+        setRole(selectedRole);
+        setProfile({ full_name: fullName, phone });
+      }
+      return { error: null };
+    } catch (err) {
+      return { error: err as Error };
+    }
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    return { error: error as Error | null };
+    try {
+      const { error } = await withRetry(() => supabase.auth.signInWithPassword({ email, password }));
+      return { error: error as Error | null };
+    } catch (err) {
+      return { error: err as Error };
+    }
   };
 
   const signOut = async () => {
