@@ -78,6 +78,31 @@ const PatientDashboard = () => {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  // Realtime: refresh when doctor approves/updates an appointment
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel(`patient-appts-${user.id}-${Math.random().toString(36).slice(2)}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "appointments", filter: `patient_id=eq.${user.id}` },
+        (payload) => {
+          const newRow = payload.new as Appointment | undefined;
+          const oldRow = payload.old as Appointment | undefined;
+          // Toast on approval transition
+          if (newRow && oldRow && oldRow.status !== newRow.status && newRow.status === "confirmed") {
+            toast({
+              title: "Appointment approved! ✅",
+              description: `The doctor will see you on ${newRow.appointment_date} at ${newRow.time_slot}.`,
+            });
+          }
+          fetchData();
+        },
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user, fetchData, toast]);
+
   const cancelAppointment = async (id: string) => {
     const { error } = await supabase
       .from("appointments")

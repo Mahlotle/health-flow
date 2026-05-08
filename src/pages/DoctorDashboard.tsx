@@ -93,6 +93,29 @@ const DoctorDashboard = () => {
 
   useEffect(() => { fetchAppointments(); }, [fetchAppointments]);
 
+  // Realtime: refresh when patients book new appointments or status changes
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel(`doctor-appts-${user.id}-${Math.random().toString(36).slice(2)}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "appointments" },
+        (payload) => {
+          const row = payload.new as Appointment | undefined;
+          if (payload.eventType === "INSERT" && row?.status === "pending_approval") {
+            toast({
+              title: "New appointment request 🔔",
+              description: `${row.department} on ${row.appointment_date} at ${row.time_slot}`,
+            });
+          }
+          fetchAppointments();
+        },
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user, fetchAppointments, toast]);
+
   const updateStatus = async (id: string, status: string) => {
     await supabase.from("appointments").update({ status }).eq("id", id);
     toast({ title: `Appointment marked as ${status}` });
