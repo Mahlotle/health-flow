@@ -6,7 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { Activity, Stethoscope, User } from "lucide-react";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { Activity, AlertCircle, Stethoscope, User } from "lucide-react";
+import { getFriendlyError } from "@/lib/errorMessages";
 
 const Auth = () => {
   const { user, role, loading, signIn, signUp } = useAuth();
