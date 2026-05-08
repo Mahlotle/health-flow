@@ -83,6 +83,13 @@ const Auth = () => {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
+            {formError && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>{formError.title}</AlertTitle>
+                <AlertDescription>{formError.description}</AlertDescription>
+              </Alert>
+            )}
             {!isLogin && (
               <>
                 <div className="space-y-2">
