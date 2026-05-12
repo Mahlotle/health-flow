@@ -117,7 +117,17 @@ const PatientDashboard = () => {
   };
 
   const pendingAppts = appointments.filter(a => ["pending", "pending_approval", "confirmed", "in_progress"].includes(a.status));
-  const pastAppts = appointments.filter(a => a.status === "completed");
+  const pastAppts = appointments.filter(a => ["completed", "cancelled", "rejected", "no_show"].includes(a.status));
+
+  const statusBadge = (status: string) => {
+    switch (status) {
+      case "completed": return { label: "Completed", className: "bg-primary/15 text-primary border-primary/30" };
+      case "cancelled": return { label: "Cancelled", className: "bg-destructive/15 text-destructive border-destructive/30" };
+      case "rejected": return { label: "Rejected", className: "bg-destructive/15 text-destructive border-destructive/30" };
+      case "no_show": return { label: "No Show", className: "bg-muted text-muted-foreground border-border" };
+      default: return { label: status, className: "" };
+    }
+  };
 
   if (loading) return <div className="min-h-screen flex items-center justify-center"><Clock className="h-8 w-8 animate-spin text-primary" /></div>;
 
