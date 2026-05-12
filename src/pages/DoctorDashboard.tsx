@@ -50,6 +50,7 @@ const DoctorDashboard = () => {
   const { toast } = useToast();
   const { nearbyClinics } = useGeoLocation();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [myQueue, setMyQueue] = useState<Appointment[]>([]);
   const [patientProfiles, setPatientProfiles] = useState<Record<string, { full_name: string; phone: string }>>({});
   const [patientRecords, setPatientRecords] = useState<MedicalRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -91,7 +92,20 @@ const DoctorDashboard = () => {
     setLoading(false);
   }, [user, filter]);
 
-  useEffect(() => { fetchAppointments(); }, [fetchAppointments]);
+  const fetchMyQueue = useCallback(async () => {
+    if (!user) return;
+    const today = new Date().toISOString().split("T")[0];
+    const { data } = await supabase
+      .from("appointments")
+      .select("*")
+      .eq("doctor_id", user.id)
+      .in("status", ["confirmed", "checked_in", "in_progress"])
+      .eq("appointment_date", today)
+      .order("time_slot", { ascending: true });
+    setMyQueue((data ?? []) as Appointment[]);
+  }, [user]);
+
+  useEffect(() => { fetchAppointments(); fetchMyQueue(); }, [fetchAppointments, fetchMyQueue]);
 
   // Realtime: refresh when patients book new appointments or status changes
   useEffect(() => {
@@ -110,11 +124,12 @@ const DoctorDashboard = () => {
             });
           }
           fetchAppointments();
+          fetchMyQueue();
         },
       )
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [user, fetchAppointments, toast]);
+  }, [user, fetchAppointments, fetchMyQueue, toast]);
 
   const updateStatus = async (id: string, status: string) => {
     await supabase.from("appointments").update({ status }).eq("id", id);
@@ -282,6 +297,37 @@ const DoctorDashboard = () => {
             </Card>
           ))}
         </div>
+
+        {/* My Confirmed Queue (today) */}
+        <Card className="border-0 card-shadow animate-fade-up-delay">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Users className="h-4 w-4 text-primary" />
+              My Confirmed Queue — Today
+              <Badge variant="outline" className="ml-2 bg-primary/10 text-primary border-primary/30">
+                {myQueue.length} {myQueue.length === 1 ? "patient" : "patients"}
+              </Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {myQueue.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No patients in your confirmed queue today.</p>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {Object.entries(
+                  myQueue.reduce<Record<string, number>>((acc, a) => {
+                    acc[a.department] = (acc[a.department] || 0) + 1;
+                    return acc;
+                  }, {})
+                ).map(([dept, count]) => (
+                  <Badge key={dept} variant="secondary" className="text-xs">
+                    {dept}: <span className="ml-1 font-bold text-primary">{count}</span>
+                  </Badge>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Tab Toggle */}
         <div className="flex gap-2">

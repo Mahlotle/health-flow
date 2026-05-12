@@ -245,6 +245,15 @@ const Booking = () => {
         .eq("available_date", dateStr)
         .eq("time_slot", formData.timeSlot);
 
+      // Notify patient that the request was sent
+      await supabase.from("notifications").insert({
+        user_id: user.id,
+        title: "Appointment Request Sent 📨",
+        message: `Your appointment at ${formData.clinic} (${formData.department}) on ${dateStr} at ${formData.timeSlot} has been submitted. You'll be notified once the doctor approves it.`,
+        type: "booking",
+        related_appointment_id: apptData.id,
+      });
+
       setAppointmentId(apptData.id);
       setBooked(true);
       toast({ title: "Appointment request sent! Awaiting doctor approval." });
