@@ -50,6 +50,7 @@ const DoctorDashboard = () => {
   const { toast } = useToast();
   const { nearbyClinics } = useGeoLocation();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [myQueue, setMyQueue] = useState<Appointment[]>([]);
   const [patientProfiles, setPatientProfiles] = useState<Record<string, { full_name: string; phone: string }>>({});
   const [patientRecords, setPatientRecords] = useState<MedicalRecord[]>([]);
   const [loading, setLoading] = useState(true);
