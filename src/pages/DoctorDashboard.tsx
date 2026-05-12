@@ -92,7 +92,20 @@ const DoctorDashboard = () => {
     setLoading(false);
   }, [user, filter]);
 
-  useEffect(() => { fetchAppointments(); }, [fetchAppointments]);
+  const fetchMyQueue = useCallback(async () => {
+    if (!user) return;
+    const today = new Date().toISOString().split("T")[0];
+    const { data } = await supabase
+      .from("appointments")
+      .select("*")
+      .eq("doctor_id", user.id)
+      .in("status", ["confirmed", "checked_in", "in_progress"])
+      .eq("appointment_date", today)
+      .order("time_slot", { ascending: true });
+    setMyQueue((data ?? []) as Appointment[]);
+  }, [user]);
+
+  useEffect(() => { fetchAppointments(); fetchMyQueue(); }, [fetchAppointments, fetchMyQueue]);
 
   // Realtime: refresh when patients book new appointments or status changes
   useEffect(() => {
