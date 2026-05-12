@@ -257,6 +257,60 @@ const PatientDashboard = () => {
           )}
         </section>
 
+        {/* Appointment History */}
+        <section className="animate-fade-up-delay space-y-4">
+          <div className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg hero-gradient">
+              <ClipboardList className="h-4 w-4 text-primary-foreground" />
+            </div>
+            <h2 className="text-xl font-semibold text-foreground">Appointment History</h2>
+          </div>
+
+          {pastAppts.length === 0 ? (
+            <Card className="border-0 card-shadow">
+              <CardContent className="p-8 text-center">
+                <ClipboardList className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+                <p className="text-muted-foreground">No past appointments yet</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="border-0 card-shadow">
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Time</TableHead>
+                      <TableHead>Clinic</TableHead>
+                      <TableHead>Department</TableHead>
+                      <TableHead>Queue #</TableHead>
+                      <TableHead>Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {pastAppts
+                      .slice()
+                      .sort((a, b) => (a.appointment_date < b.appointment_date ? 1 : -1))
+                      .map((a) => {
+                        const sb = statusBadge(a.status);
+                        return (
+                          <TableRow key={a.id}>
+                            <TableCell className="whitespace-nowrap font-medium">{a.appointment_date}</TableCell>
+                            <TableCell className="whitespace-nowrap">{a.time_slot}</TableCell>
+                            <TableCell>{a.clinic}</TableCell>
+                            <TableCell><Badge variant="secondary" className="text-xs">{a.department}</Badge></TableCell>
+                            <TableCell className="font-mono text-xs">{a.queue_number || "—"}</TableCell>
+                            <TableCell><Badge variant="outline" className={`text-xs ${sb.className}`}>{sb.label}</Badge></TableCell>
+                          </TableRow>
+                        );
+                      })}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          )}
+        </section>
+
         {/* Medical History */}
         <section className="animate-fade-up-delay space-y-4">
           <div className="flex items-center gap-2">
