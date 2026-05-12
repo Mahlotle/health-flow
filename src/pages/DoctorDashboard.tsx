@@ -124,11 +124,12 @@ const DoctorDashboard = () => {
             });
           }
           fetchAppointments();
+          fetchMyQueue();
         },
       )
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [user, fetchAppointments, toast]);
+  }, [user, fetchAppointments, fetchMyQueue, toast]);
 
   const updateStatus = async (id: string, status: string) => {
     await supabase.from("appointments").update({ status }).eq("id", id);
