@@ -222,7 +222,7 @@ const PatientDashboard = () => {
                         <Badge variant={appt.status === "in_progress" ? "default" : appt.status === "pending_approval" ? "outline" : "secondary"} className={`text-xs ${appt.status === "pending_approval" ? "bg-warning/15 text-warning border-warning/30" : appt.status === "confirmed" ? "bg-info/15 text-info border-info/30" : ""}`}>
                           {appt.status === "in_progress" ? "In Progress" : appt.status === "pending_approval" ? "Awaiting Approval" : appt.status === "confirmed" ? "Confirmed" : "Pending"}
                         </Badge>
-                        {(appt.status === "pending" || appt.status === "pending_approval") && (
+                        {(appt.status === "pending" || appt.status === "pending_approval" || appt.status === "confirmed") && (
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
                               <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-destructive hover:text-destructive gap-1">
