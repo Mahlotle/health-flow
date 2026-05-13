@@ -108,7 +108,23 @@ const DoctorDashboard = () => {
     setMyQueue((data ?? []) as Appointment[]);
   }, [user]);
 
-  useEffect(() => { fetchAppointments(); fetchMyQueue(); }, [fetchAppointments, fetchMyQueue]);
+  const fetchAllRecords = useCallback(async () => {
+    const { data } = await supabase
+      .from("medical_records")
+      .select("*")
+      .order("created_at", { ascending: false });
+    const recs = (data ?? []) as MedicalRecord[];
+    setAllRecords(recs);
+    const ids = [...new Set(recs.map(r => r.patient_id))];
+    if (ids.length > 0) {
+      const { data: profiles } = await supabase.from("profiles").select("user_id, full_name, phone").in("user_id", ids);
+      const map: Record<string, { full_name: string; phone: string }> = {};
+      (profiles ?? []).forEach(p => { map[p.user_id] = { full_name: p.full_name, phone: p.phone || "" }; });
+      setAllRecordsProfiles(map);
+    }
+  }, []);
+
+  useEffect(() => { fetchAppointments(); fetchMyQueue(); fetchAllRecords(); }, [fetchAppointments, fetchMyQueue, fetchAllRecords]);
 
   // Realtime: refresh when patients book new appointments or status changes
   useEffect(() => {
