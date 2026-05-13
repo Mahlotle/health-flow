@@ -223,38 +223,29 @@ const Booking = () => {
     setSubmitting(true);
     const dateStr = format(date, "yyyy-MM-dd");
 
-    // Insert appointment with pending_approval status
-    const { data: apptData, error } = await supabase.from("appointments").insert({
-      patient_id: user.id,
-      clinic: formData.clinic,
-      department: formData.department,
-      appointment_date: dateStr,
-      time_slot: formData.timeSlot,
-      status: "pending_approval",
-    }).select("id").single();
+    // Atomically claim slot + create appointment (prevents two patients booking same time)
+    const { data: newApptId, error } = await supabase.rpc("claim_appointment_slot", {
+      _clinic: formData.clinic,
+      _department: formData.department,
+      _appointment_date: dateStr,
+      _time_slot: formData.timeSlot,
+    });
 
-    if (error) {
-      toast({ title: "Booking failed", description: error.message, variant: "destructive" });
+    if (error || !newApptId) {
+      toast({ title: "Booking failed", description: error?.message || "Slot unavailable", variant: "destructive" });
+      // Refresh slots in case it was just taken
+      fetchAvailableSlots();
     } else {
-      // Mark the slot as booked
-      await supabase
-        .from("doctor_availability")
-        .update({ is_booked: true })
-        .eq("clinic", formData.clinic)
-        .eq("department", formData.department)
-        .eq("available_date", dateStr)
-        .eq("time_slot", formData.timeSlot);
-
       // Notify patient that the request was sent
       await supabase.from("notifications").insert({
         user_id: user.id,
         title: "Appointment Request Sent 📨",
         message: `Your appointment at ${formData.clinic} (${formData.department}) on ${dateStr} at ${formData.timeSlot} has been submitted. You'll be notified once the doctor approves it.`,
         type: "booking",
-        related_appointment_id: apptData.id,
+        related_appointment_id: newApptId as string,
       });
 
-      setAppointmentId(apptData.id);
+      setAppointmentId(newApptId as string);
       setBooked(true);
       toast({ title: "Appointment request sent! Awaiting doctor approval." });
     }

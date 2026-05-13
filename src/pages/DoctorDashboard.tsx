@@ -203,10 +203,21 @@ const DoctorDashboard = () => {
     fetchAppointments();
   };
 
+  const [patientAppointments, setPatientAppointments] = useState<Appointment[]>([]);
+  const [patientProfileDetail, setPatientProfileDetail] = useState<{ full_name: string; phone: string } | null>(null);
+
   const viewPatientHistory = async (patientId: string) => {
     setSelectedPatientId(patientId);
-    const { data } = await supabase.from("medical_records").select("*").eq("patient_id", patientId).order("created_at", { ascending: false });
-    setPatientRecords(data ?? []);
+    const [{ data: records }, { data: appts }, { data: prof }] = await Promise.all([
+      supabase.from("medical_records").select("*").eq("patient_id", patientId).order("created_at", { ascending: false }),
+      supabase.from("appointments").select("*").eq("patient_id", patientId).order("appointment_date", { ascending: false }).order("time_slot", { ascending: false }),
+      supabase.from("profiles").select("full_name, phone").eq("user_id", patientId).maybeSingle(),
+    ]);
+    setPatientRecords(records ?? []);
+    setPatientAppointments((appts ?? []) as Appointment[]);
+    setPatientProfileDetail(prof ? { full_name: prof.full_name, phone: prof.phone || "" } : null);
+    // Scroll to panel
+    setTimeout(() => document.getElementById("patient-history-panel")?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
   };
 
   const addMedicalRecord = async (appointmentId: string, patientId: string) => {
@@ -662,27 +673,101 @@ const DoctorDashboard = () => {
           </section>
         )}
 
-        {/* Patient History Panel */}
+        {/* Patient Profile + History Panel */}
         {selectedPatientId && (
-          <section className="space-y-4 animate-fade-up">
+          <section id="patient-history-panel" className="space-y-4 animate-fade-up">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg hero-gradient">
-                  <FileText className="h-4 w-4 text-primary-foreground" />
+                  <User className="h-4 w-4 text-primary-foreground" />
                 </div>
-                <h2 className="text-xl font-semibold text-foreground">
-                  Patient History — {patientProfiles[selectedPatientId]?.full_name || "Unknown"}
-                </h2>
+                <h2 className="text-xl font-semibold text-foreground">Patient Profile</h2>
               </div>
               <Button variant="ghost" size="sm" onClick={() => setSelectedPatientId(null)}>Close</Button>
             </div>
-            {patientRecords.length === 0 ? (
-              <Card className="border-0 card-shadow">
-                <CardContent className="p-6 text-center text-muted-foreground">No records found for this patient.</CardContent>
-              </Card>
-            ) : (
-              <Card className="border-0 card-shadow">
-                <CardContent className="p-0">
+
+            {/* Profile card */}
+            <Card className="border-0 card-shadow">
+              <CardContent className="p-5 grid sm:grid-cols-3 gap-4">
+                <div>
+                  <p className="text-xs text-muted-foreground">Full Name</p>
+                  <p className="text-sm font-medium text-foreground flex items-center gap-1.5">
+                    <User className="h-3.5 w-3.5 text-primary" />
+                    {patientProfileDetail?.full_name || patientProfiles[selectedPatientId]?.full_name || "Unknown"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Phone</p>
+                  <p className="text-sm font-medium text-foreground flex items-center gap-1.5">
+                    <Phone className="h-3.5 w-3.5 text-primary" />
+                    {patientProfileDetail?.phone || patientProfiles[selectedPatientId]?.phone || "—"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Total Visits</p>
+                  <p className="text-sm font-medium text-foreground flex items-center gap-1.5">
+                    <Activity className="h-3.5 w-3.5 text-primary" />
+                    {patientAppointments.length} appointments · {patientRecords.length} records
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Appointment history */}
+            <Card className="border-0 card-shadow">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <CalendarIcon className="h-4 w-4 text-primary" />
+                  Appointment History
+                  <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30">{patientAppointments.length}</Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                {patientAppointments.length === 0 ? (
+                  <p className="p-6 text-center text-sm text-muted-foreground">No appointments found.</p>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Date / Time</TableHead>
+                        <TableHead>Clinic</TableHead>
+                        <TableHead>Department</TableHead>
+                        <TableHead>Queue #</TableHead>
+                        <TableHead>Status</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {patientAppointments.map((a) => {
+                        const cfg = statusConfig[a.status] || statusConfig.pending;
+                        return (
+                          <TableRow key={a.id}>
+                            <TableCell className="text-sm whitespace-nowrap">{a.appointment_date} · {a.time_slot}</TableCell>
+                            <TableCell className="text-sm">{a.clinic}</TableCell>
+                            <TableCell><Badge variant="secondary" className="text-xs">{a.department}</Badge></TableCell>
+                            <TableCell className="font-bold text-primary">{a.queue_number || "—"}</TableCell>
+                            <TableCell><Badge variant="outline" className={cfg.className}>{cfg.label}</Badge></TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Medical records */}
+            <Card className="border-0 card-shadow">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-primary" />
+                  Medical Records
+                  <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30">{patientRecords.length}</Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                {patientRecords.length === 0 ? (
+                  <p className="p-6 text-center text-sm text-muted-foreground">No medical records yet.</p>
+                ) : (
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -705,9 +790,9 @@ const DoctorDashboard = () => {
                       ))}
                     </TableBody>
                   </Table>
-                </CardContent>
-              </Card>
-            )}
+                )}
+              </CardContent>
+            </Card>
           </section>
         )}
       </div>
