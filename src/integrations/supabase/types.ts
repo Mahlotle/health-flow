@@ -248,6 +248,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cancel_appointment: { Args: { _appt_id: string }; Returns: undefined }
       create_appointment_reminders: { Args: never; Returns: undefined }
       get_queue_stats: {
         Args: { _clinic: string }
