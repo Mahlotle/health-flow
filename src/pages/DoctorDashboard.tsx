@@ -203,10 +203,21 @@ const DoctorDashboard = () => {
     fetchAppointments();
   };
 
+  const [patientAppointments, setPatientAppointments] = useState<Appointment[]>([]);
+  const [patientProfileDetail, setPatientProfileDetail] = useState<{ full_name: string; phone: string } | null>(null);
+
   const viewPatientHistory = async (patientId: string) => {
     setSelectedPatientId(patientId);
-    const { data } = await supabase.from("medical_records").select("*").eq("patient_id", patientId).order("created_at", { ascending: false });
-    setPatientRecords(data ?? []);
+    const [{ data: records }, { data: appts }, { data: prof }] = await Promise.all([
+      supabase.from("medical_records").select("*").eq("patient_id", patientId).order("created_at", { ascending: false }),
+      supabase.from("appointments").select("*").eq("patient_id", patientId).order("appointment_date", { ascending: false }).order("time_slot", { ascending: false }),
+      supabase.from("profiles").select("full_name, phone").eq("user_id", patientId).maybeSingle(),
+    ]);
+    setPatientRecords(records ?? []);
+    setPatientAppointments((appts ?? []) as Appointment[]);
+    setPatientProfileDetail(prof ? { full_name: prof.full_name, phone: prof.phone || "" } : null);
+    // Scroll to panel
+    setTimeout(() => document.getElementById("patient-history-panel")?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
   };
 
   const addMedicalRecord = async (appointmentId: string, patientId: string) => {
