@@ -104,10 +104,7 @@ const PatientDashboard = () => {
   }, [user, fetchData, toast]);
 
   const cancelAppointment = async (id: string) => {
-    const { error } = await supabase
-      .from("appointments")
-      .update({ status: "cancelled" })
-      .eq("id", id);
+    const { error } = await supabase.rpc("cancel_appointment", { _appt_id: id });
     if (error) {
       toast({ title: "Failed to cancel", description: error.message, variant: "destructive" });
     } else {
