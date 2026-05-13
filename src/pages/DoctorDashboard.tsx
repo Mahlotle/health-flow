@@ -53,6 +53,9 @@ const DoctorDashboard = () => {
   const [myQueue, setMyQueue] = useState<Appointment[]>([]);
   const [patientProfiles, setPatientProfiles] = useState<Record<string, { full_name: string; phone: string }>>({});
   const [patientRecords, setPatientRecords] = useState<MedicalRecord[]>([]);
+  const [allRecords, setAllRecords] = useState<MedicalRecord[]>([]);
+  const [allRecordsProfiles, setAllRecordsProfiles] = useState<Record<string, { full_name: string; phone: string }>>({});
+  const [recordsSearch, setRecordsSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("pending_approval");
   const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
@@ -60,7 +63,7 @@ const DoctorDashboard = () => {
   const [newRecord, setNewRecord] = useState({ diagnosis: "", prescription: "", notes: "", appointmentId: "" });
 
   // Availability management state
-  const [availTab, setAvailTab] = useState<"queue" | "availability">("queue");
+  const [availTab, setAvailTab] = useState<"queue" | "availability" | "records">("queue");
   const [availClinic, setAvailClinic] = useState("");
   const [availDept, setAvailDept] = useState("");
   const [availDate, setAvailDate] = useState<Date>();
@@ -105,7 +108,23 @@ const DoctorDashboard = () => {
     setMyQueue((data ?? []) as Appointment[]);
   }, [user]);
 
-  useEffect(() => { fetchAppointments(); fetchMyQueue(); }, [fetchAppointments, fetchMyQueue]);
+  const fetchAllRecords = useCallback(async () => {
+    const { data } = await supabase
+      .from("medical_records")
+      .select("*")
+      .order("created_at", { ascending: false });
+    const recs = (data ?? []) as MedicalRecord[];
+    setAllRecords(recs);
+    const ids = [...new Set(recs.map(r => r.patient_id))];
+    if (ids.length > 0) {
+      const { data: profiles } = await supabase.from("profiles").select("user_id, full_name, phone").in("user_id", ids);
+      const map: Record<string, { full_name: string; phone: string }> = {};
+      (profiles ?? []).forEach(p => { map[p.user_id] = { full_name: p.full_name, phone: p.phone || "" }; });
+      setAllRecordsProfiles(map);
+    }
+  }, []);
+
+  useEffect(() => { fetchAppointments(); fetchMyQueue(); fetchAllRecords(); }, [fetchAppointments, fetchMyQueue, fetchAllRecords]);
 
   // Realtime: refresh when patients book new appointments or status changes
   useEffect(() => {
@@ -330,12 +349,15 @@ const DoctorDashboard = () => {
         </Card>
 
         {/* Tab Toggle */}
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Button variant={availTab === "queue" ? "hero" : "outline"} onClick={() => setAvailTab("queue")}>
             <ClipboardList className="h-4 w-4 mr-2" /> Patient Queue
           </Button>
           <Button variant={availTab === "availability" ? "hero" : "outline"} onClick={() => setAvailTab("availability")}>
             <CalendarIcon className="h-4 w-4 mr-2" /> Set Availability
+          </Button>
+          <Button variant={availTab === "records" ? "hero" : "outline"} onClick={() => setAvailTab("records")}>
+            <FileText className="h-4 w-4 mr-2" /> Patient Records
           </Button>
         </div>
 
@@ -555,6 +577,88 @@ const DoctorDashboard = () => {
                 </CardContent>
               </Card>
             )}
+          </section>
+        )}
+
+        {/* ---- ALL PATIENT RECORDS TAB ---- */}
+        {availTab === "records" && (
+          <section className="space-y-4 animate-fade-up">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div className="flex items-center gap-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg hero-gradient">
+                  <FileText className="h-4 w-4 text-primary-foreground" />
+                </div>
+                <h2 className="text-xl font-semibold text-foreground">All Patient Records</h2>
+                <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30">{allRecords.length}</Badge>
+              </div>
+              <Input
+                placeholder="Search by patient, diagnosis, clinic, department, prescription..."
+                value={recordsSearch}
+                onChange={(e) => setRecordsSearch(e.target.value)}
+                className="max-w-md"
+              />
+            </div>
+            {(() => {
+              const q = recordsSearch.trim().toLowerCase();
+              const filtered = allRecords.filter((r) => {
+                if (!q) return true;
+                const name = allRecordsProfiles[r.patient_id]?.full_name?.toLowerCase() || "";
+                return (
+                  name.includes(q) ||
+                  r.diagnosis?.toLowerCase().includes(q) ||
+                  r.clinic?.toLowerCase().includes(q) ||
+                  r.department?.toLowerCase().includes(q) ||
+                  (r.prescription || "").toLowerCase().includes(q) ||
+                  (r.notes || "").toLowerCase().includes(q)
+                );
+              });
+              if (filtered.length === 0) {
+                return (
+                  <Card className="border-0 card-shadow">
+                    <CardContent className="p-8 text-center text-muted-foreground">
+                      {allRecords.length === 0 ? "No medical records yet." : "No records match your search."}
+                    </CardContent>
+                  </Card>
+                );
+              }
+              return (
+                <Card className="border-0 card-shadow">
+                  <CardContent className="p-0">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Date</TableHead>
+                          <TableHead>Patient</TableHead>
+                          <TableHead>Clinic</TableHead>
+                          <TableHead>Department</TableHead>
+                          <TableHead>Diagnosis</TableHead>
+                          <TableHead>Prescription</TableHead>
+                          <TableHead>Notes</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filtered.map((r) => (
+                          <TableRow key={r.id}>
+                            <TableCell className="whitespace-nowrap text-sm">{new Date(r.created_at).toLocaleDateString()}</TableCell>
+                            <TableCell>
+                              <button className="text-foreground hover:text-primary hover:underline flex items-center gap-1" onClick={() => viewPatientHistory(r.patient_id)}>
+                                <User className="h-3 w-3" />
+                                {allRecordsProfiles[r.patient_id]?.full_name || "Unknown"}
+                              </button>
+                            </TableCell>
+                            <TableCell className="text-sm">{r.clinic}</TableCell>
+                            <TableCell><Badge variant="secondary" className="text-xs">{r.department}</Badge></TableCell>
+                            <TableCell>{r.diagnosis}</TableCell>
+                            <TableCell className="text-sm text-muted-foreground">{r.prescription || "—"}</TableCell>
+                            <TableCell className="text-sm text-muted-foreground">{r.notes || "—"}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
+              );
+            })()}
           </section>
         )}
 
