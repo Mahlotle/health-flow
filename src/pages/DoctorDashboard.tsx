@@ -349,12 +349,15 @@ const DoctorDashboard = () => {
         </Card>
 
         {/* Tab Toggle */}
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Button variant={availTab === "queue" ? "hero" : "outline"} onClick={() => setAvailTab("queue")}>
             <ClipboardList className="h-4 w-4 mr-2" /> Patient Queue
           </Button>
           <Button variant={availTab === "availability" ? "hero" : "outline"} onClick={() => setAvailTab("availability")}>
             <CalendarIcon className="h-4 w-4 mr-2" /> Set Availability
+          </Button>
+          <Button variant={availTab === "records" ? "hero" : "outline"} onClick={() => setAvailTab("records")}>
+            <FileText className="h-4 w-4 mr-2" /> Patient Records
           </Button>
         </div>
 
