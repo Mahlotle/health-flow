@@ -249,6 +249,15 @@ export type Database = {
     }
     Functions: {
       cancel_appointment: { Args: { _appt_id: string }; Returns: undefined }
+      claim_appointment_slot: {
+        Args: {
+          _appointment_date: string
+          _clinic: string
+          _department: string
+          _time_slot: string
+        }
+        Returns: string
+      }
       create_appointment_reminders: { Args: never; Returns: undefined }
       get_queue_stats: {
         Args: { _clinic: string }
