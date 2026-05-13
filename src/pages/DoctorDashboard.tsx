@@ -53,6 +53,9 @@ const DoctorDashboard = () => {
   const [myQueue, setMyQueue] = useState<Appointment[]>([]);
   const [patientProfiles, setPatientProfiles] = useState<Record<string, { full_name: string; phone: string }>>({});
   const [patientRecords, setPatientRecords] = useState<MedicalRecord[]>([]);
+  const [allRecords, setAllRecords] = useState<MedicalRecord[]>([]);
+  const [allRecordsProfiles, setAllRecordsProfiles] = useState<Record<string, { full_name: string; phone: string }>>({});
+  const [recordsSearch, setRecordsSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("pending_approval");
   const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
