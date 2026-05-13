@@ -63,7 +63,7 @@ const DoctorDashboard = () => {
   const [newRecord, setNewRecord] = useState({ diagnosis: "", prescription: "", notes: "", appointmentId: "" });
 
   // Availability management state
-  const [availTab, setAvailTab] = useState<"queue" | "availability">("queue");
+  const [availTab, setAvailTab] = useState<"queue" | "availability" | "records">("queue");
   const [availClinic, setAvailClinic] = useState("");
   const [availDept, setAvailDept] = useState("");
   const [availDate, setAvailDate] = useState<Date>();
