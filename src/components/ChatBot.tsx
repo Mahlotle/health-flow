@@ -66,43 +66,6 @@ const ChatBot = () => {
       .join("\n");
   }, [clinicsByProvince]);
 
-  const getAIResponse = (userMessage: string): string => {
-    const msg = userMessage.toLowerCase();
-
-    if (msg.includes("book") || msg.includes("appointment") || msg.includes("schedule")) {
-      return "To book an appointment:\n1. Go to the **Book Appointment** page\n2. Enable **location** to find the nearest Unjani Clinic\n3. Choose a **clinic**, **service**, **date**, and available **time slot**\n4. Submit — the doctor will review and approve your request\n\nOnce approved, you'll get a **queue number** and a live **countdown** until you're helped. 🎫";
-    }
-    if (msg.includes("queue") || msg.includes("wait") || msg.includes("status") || msg.includes("how long")) {
-      return "Check live queues on the **Queue Dashboard**:\n- 🔢 **Now Serving** number per service\n- ⏱️ **Estimated wait times**\n- 📊 **Queue load** percentage\n- 🟢 Status indicators (Short Wait, Moderate, Busy)\n\nAuto-refreshes every **15 seconds**.";
-    }
-    if (msg.includes("service") || msg.includes("department") || msg.includes("offer") || msg.includes("specialt")) {
-      return `Unjani Clinics offer these primary healthcare services:\n${serviceList}\n\nPick the one that fits your visit when booking.`;
-    }
-    if (
-      msg.includes("clinic") ||
-      msg.includes("hospital") ||
-      msg.includes("location") ||
-      msg.includes("where") ||
-      msg.includes("near")
-    ) {
-      const total = nearbyClinics.length;
-      return `**Unjani Clinics** is a nurse-led primary healthcare network across South Africa (${total} locations in the app):\n\n${clinicList}\n\n📍 Enable location on the **Book Appointment** page to sort clinics by distance from you.`;
-    }
-    if (msg.includes("hour") || msg.includes("time") || msg.includes("open") || msg.includes("when")) {
-      return "Unjani Clinics are generally open **Monday–Friday, 08:00–16:30**, with bookable **30-minute** slots. Availability depends on the specific clinic and service — the Book Appointment page only shows slots a nurse has actually opened.";
-    }
-    if (msg.includes("record") || msg.includes("history") || msg.includes("medical")) {
-      return "Your **Medical History** is available on the **Patient Dashboard** once a nurse or doctor has captured a visit. You'll see:\n- 📋 Visit summaries\n- 💊 Prescriptions\n- 🩺 Diagnoses\n- 📝 Clinical notes";
-    }
-    if (msg.includes("hello") || msg.includes("hi ") || msg === "hi" || msg.includes("hey") || msg.includes("help")) {
-      return "Hello! 😊 I can help with:\n- 📅 **Booking** an appointment\n- 📊 **Queue** status\n- 🏥 Finding an **Unjani Clinic** near you\n- 🩺 Available **services**\n- ⏰ **Operating hours**\n\nWhat would you like to know?";
-    }
-    if (msg.includes("thank")) {
-      return "You're welcome! 💚 Wishing you good health.";
-    }
-    return `I can help with:\n- 📅 **Booking appointments**\n- 📊 **Queue status**\n- 🏥 **Unjani Clinic** locations\n- 🩺 **Services** offered\n- ⏰ **Operating hours**\n\nTry one of the quick replies below, or ask me directly.`;
-  };
-
   const handleSend = async (text?: string) => {
     const message = text || input.trim();
     if (!message || loading) return;
