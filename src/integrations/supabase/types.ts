@@ -259,6 +259,7 @@ export type Database = {
         Returns: string
       }
       create_appointment_reminders: { Args: never; Returns: undefined }
+      expire_past_appointments: { Args: never; Returns: undefined }
       get_queue_stats: {
         Args: { _clinic: string }
         Returns: {
