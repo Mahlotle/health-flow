@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Activity, AlertCircle, Stethoscope, User } from "lucide-react";
 import { getFriendlyError } from "@/lib/errorMessages";
+import { supabase } from "@/integrations/supabase/client";
 
 const Auth = () => {
   const { user, role, loading, signIn, signUp } = useAuth();
@@ -21,6 +22,27 @@ const Auth = () => {
   const [selectedRole, setSelectedRole] = useState<"patient" | "doctor">("patient");
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<{ title: string; description: string } | null>(null);
+  const [forgotMode, setForgotMode] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
+
+  const handleForgotPassword = async () => {
+    setFormError(null);
+    if (!email.trim()) {
+      setFormError({ title: "Email required", description: "Enter your email address so we can send a reset link." });
+      return;
+    }
+    setSubmitting(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setSubmitting(false);
+    if (error) {
+      setFormError({ title: "Couldn't send reset email", description: error.message });
+      return;
+    }
+    setResetSent(true);
+    toast({ title: "Reset email sent", description: "Check your inbox for a password reset link." });
+  };
 
   if (loading) return <div className="min-h-screen flex items-center justify-center"><Activity className="h-8 w-8 animate-spin text-primary" /></div>;
   if (user && role) return <Navigate to={role === "doctor" ? "/doctor" : "/patient"} replace />;
