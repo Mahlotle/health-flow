@@ -58,6 +58,7 @@ const DoctorDashboard = () => {
   const [recordsSearch, setRecordsSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("pending_approval");
+  const [patientSearch, setPatientSearch] = useState("");
   const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
   const [recordDialogOpen, setRecordDialogOpen] = useState(false);
   const [newRecord, setNewRecord] = useState({ diagnosis: "", prescription: "", notes: "", appointmentId: "" });
@@ -466,33 +467,57 @@ const DoctorDashboard = () => {
         {/* ---- QUEUE TAB ---- */}
         {availTab === "queue" && (
           <section className="space-y-4 animate-fade-up-delay">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
               <div className="flex items-center gap-2">
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg hero-gradient">
                   <ClipboardList className="h-4 w-4 text-primary-foreground" />
                 </div>
                 <h2 className="text-xl font-semibold text-foreground">Patient Queue</h2>
               </div>
-              <Select value={filter} onValueChange={setFilter}>
-                <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="pending_approval">Awaiting Approval</SelectItem>
-                  <SelectItem value="confirmed">Confirmed</SelectItem>
-                  <SelectItem value="today">Today</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
-                  <SelectItem value="all">All</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="flex items-center gap-2 flex-wrap">
+                <Input
+                  placeholder="Search patient name, phone, dept, queue #…"
+                  value={patientSearch}
+                  onChange={(e) => setPatientSearch(e.target.value)}
+                  className="w-[260px]"
+                />
+                <Select value={filter} onValueChange={setFilter}>
+                  <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pending_approval">Awaiting Approval</SelectItem>
+                    <SelectItem value="confirmed">Confirmed</SelectItem>
+                    <SelectItem value="today">Today</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                    <SelectItem value="all">All</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
-            {appointments.length === 0 ? (
-              <Card className="border-0 card-shadow">
-                <CardContent className="p-8 text-center">
-                  <CheckCircle2 className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-                  <p className="text-muted-foreground">No appointments found</p>
-                </CardContent>
-              </Card>
-            ) : (
+            {(() => {
+              const q = patientSearch.trim().toLowerCase();
+              const visible = appointments.filter((a) => {
+                if (!q) return true;
+                const p = patientProfiles[a.patient_id];
+                return (
+                  (p?.full_name || "").toLowerCase().includes(q) ||
+                  (p?.phone || "").toLowerCase().includes(q) ||
+                  a.department.toLowerCase().includes(q) ||
+                  a.clinic.toLowerCase().includes(q) ||
+                  (a.queue_number || "").toLowerCase().includes(q)
+                );
+              });
+              if (visible.length === 0) {
+                return (
+                  <Card className="border-0 card-shadow">
+                    <CardContent className="p-8 text-center">
+                      <CheckCircle2 className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+                      <p className="text-muted-foreground">{appointments.length === 0 ? "No appointments found" : "No patients match your search"}</p>
+                    </CardContent>
+                  </Card>
+                );
+              }
+              return (
               <Card className="border-0 card-shadow">
                 <CardContent className="p-0">
                   <Table>
@@ -508,7 +533,7 @@ const DoctorDashboard = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {appointments.map((appt) => {
+                      {visible.map((appt) => {
                         const patient = patientProfiles[appt.patient_id];
                         const cfg = statusConfig[appt.status] || statusConfig.pending;
                         return (
@@ -587,7 +612,8 @@ const DoctorDashboard = () => {
                   </Table>
                 </CardContent>
               </Card>
-            )}
+              );
+            })()}
           </section>
         )}
 

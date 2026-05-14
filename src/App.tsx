@@ -9,6 +9,7 @@ import ChatBot from "@/components/ChatBot";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
+import ResetPassword from "./pages/ResetPassword";
 import Booking from "./pages/Booking";
 import QueueDashboard from "./pages/QueueDashboard";
 import PatientDashboard from "./pages/PatientDashboard";
@@ -36,6 +37,7 @@ const AppRoutes = () => {
       <Routes>
         <Route path="/" element={<Index />} />
         <Route path="/auth" element={<Auth />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/booking" element={
           <ProtectedRoute allowedRole="patient">
             <Booking />

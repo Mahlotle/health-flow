@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Activity, AlertCircle, Stethoscope, User } from "lucide-react";
 import { getFriendlyError } from "@/lib/errorMessages";
+import { supabase } from "@/integrations/supabase/client";
 
 const Auth = () => {
   const { user, role, loading, signIn, signUp } = useAuth();
@@ -21,6 +22,27 @@ const Auth = () => {
   const [selectedRole, setSelectedRole] = useState<"patient" | "doctor">("patient");
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<{ title: string; description: string } | null>(null);
+  const [forgotMode, setForgotMode] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
+
+  const handleForgotPassword = async () => {
+    setFormError(null);
+    if (!email.trim()) {
+      setFormError({ title: "Email required", description: "Enter your email address so we can send a reset link." });
+      return;
+    }
+    setSubmitting(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setSubmitting(false);
+    if (error) {
+      setFormError({ title: "Couldn't send reset email", description: error.message });
+      return;
+    }
+    setResetSent(true);
+    toast({ title: "Reset email sent", description: "Check your inbox for a password reset link." });
+  };
 
   if (loading) return <div className="min-h-screen flex items-center justify-center"><Activity className="h-8 w-8 animate-spin text-primary" /></div>;
   if (user && role) return <Navigate to={role === "doctor" ? "/doctor" : "/patient"} replace />;
@@ -137,11 +159,32 @@ const Auth = () => {
               {submitting ? "Please wait..." : isLogin ? "Sign In" : "Create Account"}
             </Button>
           </form>
+          {isLogin && (
+            <div className="mt-3 text-center">
+              {!forgotMode ? (
+                <button type="button" className="text-sm text-muted-foreground hover:text-primary hover:underline" onClick={() => { setForgotMode(true); setFormError(null); setResetSent(false); }}>
+                  Forgot your password?
+                </button>
+              ) : resetSent ? (
+                <p className="text-sm text-success">✓ Reset link sent. Check your email and follow the link to choose a new password.</p>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-xs text-muted-foreground">Enter your email above, then click below to receive a reset link.</p>
+                  <div className="flex gap-2 justify-center">
+                    <Button type="button" size="sm" variant="hero" disabled={submitting} onClick={handleForgotPassword}>
+                      {submitting ? "Sending..." : "Send reset link"}
+                    </Button>
+                    <Button type="button" size="sm" variant="ghost" onClick={() => setForgotMode(false)}>Cancel</Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
           <div className="mt-4 text-center">
             <button
               type="button"
               className="text-sm text-primary hover:underline"
-              onClick={() => setIsLogin(!isLogin)}
+              onClick={() => { setIsLogin(!isLogin); setForgotMode(false); }}
             >
               {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
             </button>
