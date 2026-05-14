@@ -108,16 +108,86 @@ const ChatBot = () => {
     if (!message || loading) return;
 
     const userMsg: Message = { id: Date.now().toString(), role: "user", content: message };
-    setMessages((prev) => [...prev, userMsg]);
+    const history = [...messages, userMsg];
+    setMessages(history);
     setInput("");
     setLoading(true);
 
-    await new Promise((r) => setTimeout(r, 600 + Math.random() * 500));
+    // Build context-aware preamble with live clinic/service info
+    const contextNote = `\n\nContext available to you:\nServices: ${UNJANI_SERVICES.join(", ")}.\nClinics by province: ${Object.entries(
+      clinicsByProvince
+    )
+      .map(([p, n]) => `${p}: ${n.join(", ")}`)
+      .join(" | ")}.`;
 
-    const response = getAIResponse(message);
-    const botMsg: Message = { id: (Date.now() + 1).toString(), role: "assistant", content: response };
-    setMessages((prev) => [...prev, botMsg]);
-    setLoading(false);
+    const apiMessages = history
+      .filter((m) => m.id !== "welcome")
+      .map((m, i, arr) => ({
+        role: m.role,
+        content: i === arr.length - 1 && m.role === "user" ? m.content + contextNote : m.content,
+      }));
+
+    const assistantId = (Date.now() + 1).toString();
+    setMessages((prev) => [...prev, { id: assistantId, role: "assistant", content: "" }]);
+
+    try {
+      const resp = await fetch(CHAT_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({ messages: apiMessages }),
+      });
+
+      if (!resp.ok || !resp.body) {
+        const errText = resp.status === 429 ? "I'm getting a lot of questions right now — please try again shortly." : "Sorry, I couldn't reach the AI service. Please try again.";
+        setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, content: errText } : m)));
+        toast({ title: "AI error", description: errText, variant: "destructive" });
+        setLoading(false);
+        return;
+      }
+
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let acc = "";
+      let done = false;
+
+      while (!done) {
+        const { done: d, value } = await reader.read();
+        if (d) break;
+        buffer += decoder.decode(value, { stream: true });
+        let nl: number;
+        while ((nl = buffer.indexOf("\n")) !== -1) {
+          let line = buffer.slice(0, nl);
+          buffer = buffer.slice(nl + 1);
+          if (line.endsWith("\r")) line = line.slice(0, -1);
+          if (!line.startsWith("data: ")) continue;
+          const payload = line.slice(6).trim();
+          if (payload === "[DONE]") {
+            done = true;
+            break;
+          }
+          try {
+            const parsed = JSON.parse(payload);
+            const delta = parsed.choices?.[0]?.delta?.content;
+            if (delta) {
+              acc += delta;
+              setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, content: acc } : m)));
+            }
+          } catch {
+            buffer = line + "\n" + buffer;
+            break;
+          }
+        }
+      }
+    } catch (err) {
+      console.error("chat stream error", err);
+      setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, content: "Sorry, something went wrong. Please try again." } : m)));
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
