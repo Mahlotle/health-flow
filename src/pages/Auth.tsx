@@ -159,11 +159,32 @@ const Auth = () => {
               {submitting ? "Please wait..." : isLogin ? "Sign In" : "Create Account"}
             </Button>
           </form>
+          {isLogin && (
+            <div className="mt-3 text-center">
+              {!forgotMode ? (
+                <button type="button" className="text-sm text-muted-foreground hover:text-primary hover:underline" onClick={() => { setForgotMode(true); setFormError(null); setResetSent(false); }}>
+                  Forgot your password?
+                </button>
+              ) : resetSent ? (
+                <p className="text-sm text-success">✓ Reset link sent. Check your email and follow the link to choose a new password.</p>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-xs text-muted-foreground">Enter your email above, then click below to receive a reset link.</p>
+                  <div className="flex gap-2 justify-center">
+                    <Button type="button" size="sm" variant="hero" disabled={submitting} onClick={handleForgotPassword}>
+                      {submitting ? "Sending..." : "Send reset link"}
+                    </Button>
+                    <Button type="button" size="sm" variant="ghost" onClick={() => setForgotMode(false)}>Cancel</Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
           <div className="mt-4 text-center">
             <button
               type="button"
               className="text-sm text-primary hover:underline"
-              onClick={() => setIsLogin(!isLogin)}
+              onClick={() => { setIsLogin(!isLogin); setForgotMode(false); }}
             >
               {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
             </button>
