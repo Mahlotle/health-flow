@@ -7,6 +7,9 @@ import { MessageCircle, X, Send, Bot, User, Loader2, CalendarPlus, Activity } fr
 import ReactMarkdown from "react-markdown";
 import { UNJANI_SERVICES } from "@/lib/unjaniServices";
 import { useLocation as useGeoLocation } from "@/hooks/useLocation";
+import { toast } from "@/hooks/use-toast";
+
+const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`;
 
 interface Message {
   id: string;
@@ -63,58 +66,91 @@ const ChatBot = () => {
       .join("\n");
   }, [clinicsByProvince]);
 
-  const getAIResponse = (userMessage: string): string => {
-    const msg = userMessage.toLowerCase();
-
-    if (msg.includes("book") || msg.includes("appointment") || msg.includes("schedule")) {
-      return "To book an appointment:\n1. Go to the **Book Appointment** page\n2. Enable **location** to find the nearest Unjani Clinic\n3. Choose a **clinic**, **service**, **date**, and available **time slot**\n4. Submit — the doctor will review and approve your request\n\nOnce approved, you'll get a **queue number** and a live **countdown** until you're helped. 🎫";
-    }
-    if (msg.includes("queue") || msg.includes("wait") || msg.includes("status") || msg.includes("how long")) {
-      return "Check live queues on the **Queue Dashboard**:\n- 🔢 **Now Serving** number per service\n- ⏱️ **Estimated wait times**\n- 📊 **Queue load** percentage\n- 🟢 Status indicators (Short Wait, Moderate, Busy)\n\nAuto-refreshes every **15 seconds**.";
-    }
-    if (msg.includes("service") || msg.includes("department") || msg.includes("offer") || msg.includes("specialt")) {
-      return `Unjani Clinics offer these primary healthcare services:\n${serviceList}\n\nPick the one that fits your visit when booking.`;
-    }
-    if (
-      msg.includes("clinic") ||
-      msg.includes("hospital") ||
-      msg.includes("location") ||
-      msg.includes("where") ||
-      msg.includes("near")
-    ) {
-      const total = nearbyClinics.length;
-      return `**Unjani Clinics** is a nurse-led primary healthcare network across South Africa (${total} locations in the app):\n\n${clinicList}\n\n📍 Enable location on the **Book Appointment** page to sort clinics by distance from you.`;
-    }
-    if (msg.includes("hour") || msg.includes("time") || msg.includes("open") || msg.includes("when")) {
-      return "Unjani Clinics are generally open **Monday–Friday, 08:00–16:30**, with bookable **30-minute** slots. Availability depends on the specific clinic and service — the Book Appointment page only shows slots a nurse has actually opened.";
-    }
-    if (msg.includes("record") || msg.includes("history") || msg.includes("medical")) {
-      return "Your **Medical History** is available on the **Patient Dashboard** once a nurse or doctor has captured a visit. You'll see:\n- 📋 Visit summaries\n- 💊 Prescriptions\n- 🩺 Diagnoses\n- 📝 Clinical notes";
-    }
-    if (msg.includes("hello") || msg.includes("hi ") || msg === "hi" || msg.includes("hey") || msg.includes("help")) {
-      return "Hello! 😊 I can help with:\n- 📅 **Booking** an appointment\n- 📊 **Queue** status\n- 🏥 Finding an **Unjani Clinic** near you\n- 🩺 Available **services**\n- ⏰ **Operating hours**\n\nWhat would you like to know?";
-    }
-    if (msg.includes("thank")) {
-      return "You're welcome! 💚 Wishing you good health.";
-    }
-    return `I can help with:\n- 📅 **Booking appointments**\n- 📊 **Queue status**\n- 🏥 **Unjani Clinic** locations\n- 🩺 **Services** offered\n- ⏰ **Operating hours**\n\nTry one of the quick replies below, or ask me directly.`;
-  };
-
   const handleSend = async (text?: string) => {
     const message = text || input.trim();
     if (!message || loading) return;
 
     const userMsg: Message = { id: Date.now().toString(), role: "user", content: message };
-    setMessages((prev) => [...prev, userMsg]);
+    const history = [...messages, userMsg];
+    setMessages(history);
     setInput("");
     setLoading(true);
 
-    await new Promise((r) => setTimeout(r, 600 + Math.random() * 500));
+    // Build context-aware preamble with live clinic/service info
+    const contextNote = `\n\nContext available to you:\nServices: ${UNJANI_SERVICES.join(", ")}.\nClinics by province: ${Object.entries(
+      clinicsByProvince
+    )
+      .map(([p, n]) => `${p}: ${n.join(", ")}`)
+      .join(" | ")}.`;
 
-    const response = getAIResponse(message);
-    const botMsg: Message = { id: (Date.now() + 1).toString(), role: "assistant", content: response };
-    setMessages((prev) => [...prev, botMsg]);
-    setLoading(false);
+    const apiMessages = history
+      .filter((m) => m.id !== "welcome")
+      .map((m, i, arr) => ({
+        role: m.role,
+        content: i === arr.length - 1 && m.role === "user" ? m.content + contextNote : m.content,
+      }));
+
+    const assistantId = (Date.now() + 1).toString();
+    setMessages((prev) => [...prev, { id: assistantId, role: "assistant", content: "" }]);
+
+    try {
+      const resp = await fetch(CHAT_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({ messages: apiMessages }),
+      });
+
+      if (!resp.ok || !resp.body) {
+        const errText = resp.status === 429 ? "I'm getting a lot of questions right now — please try again shortly." : "Sorry, I couldn't reach the AI service. Please try again.";
+        setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, content: errText } : m)));
+        toast({ title: "AI error", description: errText, variant: "destructive" });
+        setLoading(false);
+        return;
+      }
+
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let acc = "";
+      let done = false;
+
+      while (!done) {
+        const { done: d, value } = await reader.read();
+        if (d) break;
+        buffer += decoder.decode(value, { stream: true });
+        let nl: number;
+        while ((nl = buffer.indexOf("\n")) !== -1) {
+          let line = buffer.slice(0, nl);
+          buffer = buffer.slice(nl + 1);
+          if (line.endsWith("\r")) line = line.slice(0, -1);
+          if (!line.startsWith("data: ")) continue;
+          const payload = line.slice(6).trim();
+          if (payload === "[DONE]") {
+            done = true;
+            break;
+          }
+          try {
+            const parsed = JSON.parse(payload);
+            const delta = parsed.choices?.[0]?.delta?.content;
+            if (delta) {
+              acc += delta;
+              setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, content: acc } : m)));
+            }
+          } catch {
+            buffer = line + "\n" + buffer;
+            break;
+          }
+        }
+      }
+    } catch (err) {
+      console.error("chat stream error", err);
+      setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, content: "Sorry, something went wrong. Please try again." } : m)));
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
