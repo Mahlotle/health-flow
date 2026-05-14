@@ -533,7 +533,7 @@ const DoctorDashboard = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {appointments.map((appt) => {
+                      {visible.map((appt) => {
                         const patient = patientProfiles[appt.patient_id];
                         const cfg = statusConfig[appt.status] || statusConfig.pending;
                         return (
@@ -612,7 +612,8 @@ const DoctorDashboard = () => {
                   </Table>
                 </CardContent>
               </Card>
-            )}
+              );
+            })()}
           </section>
         )}
 
