@@ -7,6 +7,9 @@ import { MessageCircle, X, Send, Bot, User, Loader2, CalendarPlus, Activity } fr
 import ReactMarkdown from "react-markdown";
 import { UNJANI_SERVICES } from "@/lib/unjaniServices";
 import { useLocation as useGeoLocation } from "@/hooks/useLocation";
+import { toast } from "@/hooks/use-toast";
+
+const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`;
 
 interface Message {
   id: string;
