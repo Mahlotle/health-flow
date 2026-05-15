@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/table";
 import {
   Users, Clock, CheckCircle2, Stethoscope, Phone, MapPin, Calendar as CalendarIcon,
-  ArrowRight, FileText, AlertCircle, User, Activity, ClipboardList, Plus, Trash2, Check, X,
+  ArrowRight, FileText, AlertCircle, User, Activity, ClipboardList, Plus, Trash2, Check, X, Loader2,
 } from "lucide-react";
 import { format } from "date-fns";
 import { useAuth } from "@/hooks/useAuth";
