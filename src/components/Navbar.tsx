@@ -1,9 +1,10 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Activity, Calendar, LayoutDashboard, Menu, X, LogIn, LogOut, User, Stethoscope, Settings } from "lucide-react";
+import { Calendar, LayoutDashboard, Menu, X, LogIn, LogOut, User, Stethoscope, Settings, Activity } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import NotificationBell from "@/components/NotificationBell";
+import hasLogo from "@/assets/has-logo.png";
 
 const Navbar = () => {
   const location = useLocation();
@@ -32,10 +33,8 @@ const Navbar = () => {
     <nav className="sticky top-0 z-50 border-b bg-card/80 backdrop-blur-md">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         <Link to="/" className="flex items-center gap-2 font-bold text-lg text-foreground">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg hero-gradient">
-            <Activity className="h-5 w-5 text-primary-foreground" />
-          </div>
-          MedQueue
+          <img src={hasLogo} alt="HAS logo" width={36} height={36} className="h-9 w-9 rounded-lg" />
+          HAS
         </Link>
 
         {/* Desktop */}

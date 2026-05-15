@@ -82,7 +82,7 @@ const Auth = () => {
         if (error) {
           showError(error, "signup");
         } else {
-          toast({ title: "Account created!", description: "Welcome to MedQueue. You can now book appointments and skip the queue." });
+          toast({ title: "Account created!", description: "Welcome to HAS. You can now book appointments and skip the queue." });
         }
       }
     } catch (err) {
@@ -100,7 +100,7 @@ const Auth = () => {
           </div>
           <CardTitle className="text-2xl">{isLogin ? "Welcome Back" : "Create Account"}</CardTitle>
           <CardDescription>
-            {isLogin ? "Sign in to access your MedQueue dashboard" : "Join MedQueue as a patient or doctor"}
+            {isLogin ? "Sign in to access your HAS dashboard" : "Join HAS as a patient or doctor"}
           </CardDescription>
         </CardHeader>
         <CardContent>

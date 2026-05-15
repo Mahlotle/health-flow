@@ -32,7 +32,7 @@ const ChatBot = () => {
       id: "welcome",
       role: "assistant",
       content:
-        "👋 Hi! I'm your **MedQueue Assistant**. I can help you with booking, checking queue status, or finding an Unjani Clinic near you. How can I help?",
+        "👋 Hi! I'm your **HAS Assistant**. I can help you with booking, checking queue status, or finding an Unjani Clinic near you. How can I help?",
     },
   ]);
   const [input, setInput] = useState("");
@@ -184,7 +184,7 @@ const ChatBot = () => {
                   <Bot className="h-5 w-5 text-primary-foreground" />
                 </div>
                 <div>
-                  <div className="font-semibold text-primary-foreground text-sm">MedQueue Assistant</div>
+                  <div className="font-semibold text-primary-foreground text-sm">HAS Assistant</div>
                   <div className="text-primary-foreground/70 text-xs flex items-center gap-1">
                     <span className="h-1.5 w-1.5 rounded-full bg-primary-foreground/60 inline-block animate-pulse-soft" />
                     Online

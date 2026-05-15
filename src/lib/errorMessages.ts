@@ -16,7 +16,7 @@ export function getFriendlyError(error: unknown, context: "login" | "signup" | "
     return {
       title: "Connection problem",
       description:
-        "We couldn't reach the MedQueue servers. Please check your internet connection and try again. If you're on mobile data, try switching to Wi-Fi.",
+        "We couldn't reach the HAS servers. Please check your internet connection and try again. If you're on mobile data, try switching to Wi-Fi.",
     };
   }
 
