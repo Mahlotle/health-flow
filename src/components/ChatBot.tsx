@@ -3,7 +3,8 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { MessageCircle, X, Send, Bot, User, Loader2, CalendarPlus, Activity } from "lucide-react";
+import { MessageCircle, X, Send, User, Loader2, CalendarPlus, ListChecks } from "lucide-react";
+import hasLogo from "@/assets/has-logo.png";
 import ReactMarkdown from "react-markdown";
 import { UNJANI_SERVICES } from "@/lib/unjaniServices";
 import { useLocation as useGeoLocation } from "@/hooks/useLocation";
@@ -169,7 +170,7 @@ const ChatBot = () => {
           className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full hero-gradient text-primary-foreground shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 flex items-center justify-center"
           aria-label="Open chat"
         >
-          <MessageCircle className="h-6 w-6" />
+          <img src={hasLogo} alt="HAS chat" width={28} height={28} className="h-7 w-7" />
         </button>
       )}
 
@@ -180,8 +181,8 @@ const ChatBot = () => {
             {/* Header */}
             <div className="hero-gradient p-4 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-3">
-                <div className="h-9 w-9 rounded-full bg-primary-foreground/20 flex items-center justify-center">
-                  <Bot className="h-5 w-5 text-primary-foreground" />
+                <div className="h-9 w-9 rounded-full bg-primary-foreground/95 flex items-center justify-center p-1">
+                  <img src={hasLogo} alt="HAS" width={28} height={28} className="h-7 w-7" />
                 </div>
                 <div>
                   <div className="font-semibold text-primary-foreground text-sm">HAS Assistant</div>
@@ -210,7 +211,7 @@ const ChatBot = () => {
               </Link>
               <Link to="/queue" className="flex-1" onClick={() => setOpen(false)}>
                 <Button size="sm" variant="outline" className="w-full gap-1.5">
-                  <Activity className="h-3.5 w-3.5" />
+                  <ListChecks className="h-3.5 w-3.5" />
                   Queue Status
                 </Button>
               </Link>
@@ -221,8 +222,8 @@ const ChatBot = () => {
               {messages.map((msg) => (
                 <div key={msg.id} className={`flex gap-2 ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
                   {msg.role === "assistant" && (
-                    <div className="h-7 w-7 rounded-full bg-accent flex items-center justify-center shrink-0 mt-0.5">
-                      <Bot className="h-3.5 w-3.5 text-accent-foreground" />
+                    <div className="h-7 w-7 rounded-full bg-accent flex items-center justify-center shrink-0 mt-0.5 p-1">
+                      <img src={hasLogo} alt="HAS" width={20} height={20} className="h-5 w-5" />
                     </div>
                   )}
                   <div
@@ -249,8 +250,8 @@ const ChatBot = () => {
               ))}
               {loading && (
                 <div className="flex gap-2 justify-start">
-                  <div className="h-7 w-7 rounded-full bg-accent flex items-center justify-center shrink-0">
-                    <Bot className="h-3.5 w-3.5 text-accent-foreground" />
+                  <div className="h-7 w-7 rounded-full bg-accent flex items-center justify-center shrink-0 p-1">
+                    <img src={hasLogo} alt="HAS" width={20} height={20} className="h-5 w-5" />
                   </div>
                   <div className="bg-muted rounded-2xl rounded-bl-md px-4 py-3">
                     <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />

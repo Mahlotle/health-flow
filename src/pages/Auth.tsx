@@ -7,9 +7,10 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { Activity, AlertCircle, Stethoscope, User } from "lucide-react";
+import { Loader2, AlertCircle, Stethoscope, User } from "lucide-react";
 import { getFriendlyError } from "@/lib/errorMessages";
 import { supabase } from "@/integrations/supabase/client";
+import hasLogo from "@/assets/has-logo.png";
 
 const Auth = () => {
   const { user, role, loading, signIn, signUp } = useAuth();
@@ -44,7 +45,7 @@ const Auth = () => {
     toast({ title: "Reset email sent", description: "Check your inbox for a password reset link." });
   };
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center"><Activity className="h-8 w-8 animate-spin text-primary" /></div>;
+  if (loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
   if (user && role) return <Navigate to={role === "doctor" ? "/doctor" : "/patient"} replace />;
 
   const showError = (err: unknown, ctx: "login" | "signup") => {
@@ -95,8 +96,8 @@ const Auth = () => {
     <div className="min-h-screen flex items-center justify-center py-12 px-4">
       <Card className="w-full max-w-md border-0 card-shadow animate-fade-up">
         <CardHeader className="text-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl hero-gradient mx-auto mb-3">
-            <Activity className="h-6 w-6 text-primary-foreground" />
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-accent mx-auto mb-3 ring-1 ring-primary/10">
+            <img src={hasLogo} alt="HAS logo" width={40} height={40} className="h-10 w-10" />
           </div>
           <CardTitle className="text-2xl">{isLogin ? "Welcome Back" : "Create Account"}</CardTitle>
           <CardDescription>
