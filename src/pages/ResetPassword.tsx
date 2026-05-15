@@ -51,7 +51,7 @@ const ResetPassword = () => {
             <KeyRound className="h-6 w-6 text-primary-foreground" />
           </div>
           <CardTitle className="text-2xl">Set a new password</CardTitle>
-          <CardDescription>Choose a strong password for your MedQueue account.</CardDescription>
+          <CardDescription>Choose a strong password for your HAS account.</CardDescription>
         </CardHeader>
         <CardContent>
           {!ready ? (

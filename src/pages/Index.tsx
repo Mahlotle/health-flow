@@ -221,7 +221,7 @@ const Index = () => {
       {/* Footer */}
       <footer className="py-8 border-t">
         <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
-          © 2026 MedQueue — Smart Healthcare Access System
+          © 2026 HAS — Smart Healthcare Access System
         </div>
       </footer>
     </div>
