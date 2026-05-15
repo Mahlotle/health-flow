@@ -5,8 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { Activity, AlertCircle, KeyRound } from "lucide-react";
+import { Loader2, AlertCircle, KeyRound } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import hasLogo from "@/assets/has-logo.png";
 import { useToast } from "@/hooks/use-toast";
 
 const ResetPassword = () => {
@@ -47,8 +48,11 @@ const ResetPassword = () => {
     <div className="min-h-screen flex items-center justify-center py-12 px-4">
       <Card className="w-full max-w-md border-0 card-shadow animate-fade-up">
         <CardHeader className="text-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl hero-gradient mx-auto mb-3">
-            <KeyRound className="h-6 w-6 text-primary-foreground" />
+          <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl bg-accent mx-auto mb-3 ring-1 ring-primary/10">
+            <img src={hasLogo} alt="HAS logo" width={40} height={40} className="h-10 w-10" />
+            <span className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full hero-gradient">
+              <KeyRound className="h-3 w-3 text-primary-foreground" />
+            </span>
           </div>
           <CardTitle className="text-2xl">Set a new password</CardTitle>
           <CardDescription>Choose a strong password for your HAS account.</CardDescription>
@@ -56,7 +60,7 @@ const ResetPassword = () => {
         <CardContent>
           {!ready ? (
             <div className="flex justify-center py-6">
-              <Activity className="h-6 w-6 animate-spin text-primary" />
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">

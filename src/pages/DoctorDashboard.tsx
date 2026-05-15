@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/table";
 import {
   Users, Clock, CheckCircle2, Stethoscope, Phone, MapPin, Calendar as CalendarIcon,
-  ArrowRight, FileText, AlertCircle, User, Activity, ClipboardList, Plus, Trash2, Check, X,
+  ArrowRight, FileText, AlertCircle, User, Activity, ClipboardList, Plus, Trash2, Check, X, Loader2,
 } from "lucide-react";
 import { format } from "date-fns";
 import { useAuth } from "@/hooks/useAuth";
@@ -295,7 +295,7 @@ const DoctorDashboard = () => {
   const existingTimeSlotSet = new Set(existingSlots.map(s => s.time_slot));
   const addableSlots = timeSlotOptions.filter(t => !existingTimeSlotSet.has(t));
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center"><Activity className="h-8 w-8 animate-spin text-primary" /></div>;
+  if (loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
 
   return (
     <div className="min-h-screen py-8">

@@ -16,13 +16,13 @@ import PatientDashboard from "./pages/PatientDashboard";
 import DoctorDashboard from "./pages/DoctorDashboard";
 import ProfileSettings from "./pages/ProfileSettings";
 import NotFound from "./pages/NotFound";
-import { Activity } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 const queryClient = new QueryClient();
 
 const ProtectedRoute = ({ children, allowedRole }: { children: React.ReactNode; allowedRole?: "patient" | "doctor" }) => {
   const { user, role, loading } = useAuth();
-  if (loading) return <div className="min-h-screen flex items-center justify-center"><Activity className="h-8 w-8 animate-spin text-primary" /></div>;
+  if (loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
   if (!user) return <Navigate to="/auth" replace />;
   if (allowedRole && role !== allowedRole) return <Navigate to={role === "doctor" ? "/doctor" : "/patient"} replace />;
   return <>{children}</>;
