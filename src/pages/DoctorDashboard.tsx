@@ -152,7 +152,26 @@ const DoctorDashboard = () => {
   }, [user, fetchAppointments, fetchMyQueue, toast]);
 
   const updateStatus = async (id: string, status: string) => {
+    const appt = appointments.find((a) => a.id === id);
     await supabase.from("appointments").update({ status }).eq("id", id);
+    if (appt) {
+      const statusMessages: Record<string, { title: string; message: string }> = {
+        checked_in: { title: "You're Checked In 🏥", message: `You've been checked in at ${appt.clinic} (${appt.department}). Please wait to be called.` },
+        in_progress: { title: "It's Your Turn 👨‍⚕️", message: `The doctor is ready to see you now at ${appt.clinic} (${appt.department}).` },
+        completed: { title: "Visit Completed ✅", message: `Your visit at ${appt.clinic} (${appt.department}) is complete. Take care!` },
+        no_show: { title: "Marked as No-Show", message: `Your appointment at ${appt.clinic} (${appt.department}) on ${appt.appointment_date} was marked as no-show.` },
+      };
+      const m = statusMessages[status];
+      if (m) {
+        await supabase.from("notifications").insert({
+          user_id: appt.patient_id,
+          title: m.title,
+          message: m.message,
+          type: `status_${status}`,
+          related_appointment_id: id,
+        });
+      }
+    }
     toast({ title: `Appointment marked as ${status}` });
     fetchAppointments();
   };
