@@ -255,6 +255,14 @@ const DoctorDashboard = () => {
     if (error) {
       toast({ title: "Error adding record", description: error.message, variant: "destructive" });
     } else {
+      // Notify patient a new medical record is available
+      await supabase.from("notifications").insert({
+        user_id: patientId,
+        title: "New Medical Record 📋",
+        message: `A new medical record from your visit at ${appt?.clinic || ""} (${appt?.department || ""}) is now available in your health history.`,
+        type: "record_added",
+        related_appointment_id: appointmentId,
+      });
       toast({ title: "Medical record added" });
       setNewRecord({ diagnosis: "", prescription: "", notes: "", appointmentId: "" });
       setRecordDialogOpen(false);
