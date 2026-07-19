@@ -169,7 +169,7 @@ const BookingTicket = ({ formData, date, appointmentId, onBookAnother }: {
 };
 
 const Booking = () => {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [date, setDate] = useState<Date>();
   const [booked, setBooked] = useState(false);
   const [appointmentId, setAppointmentId] = useState("");
@@ -244,6 +244,40 @@ const Booking = () => {
         type: "booking",
         related_appointment_id: newApptId as string,
       });
+
+      // Notify the doctor who owns the availability slot (if any)
+      const { data: slot } = await supabase
+        .from("doctor_availability")
+        .select("doctor_id")
+        .eq("clinic", formData.clinic)
+        .eq("department", formData.department)
+        .eq("available_date", dateStr)
+        .eq("time_slot", formData.timeSlot)
+        .maybeSingle();
+      const patientName = profile?.full_name || "A patient";
+      if (slot?.doctor_id) {
+        await supabase.from("notifications").insert({
+          user_id: slot.doctor_id,
+          title: "New Appointment Request 🔔",
+          message: `${patientName} requested an appointment at ${formData.clinic} (${formData.department}) on ${dateStr} at ${formData.timeSlot}. Please review and approve.`,
+          type: "new_request",
+          related_appointment_id: newApptId as string,
+        });
+      } else {
+        // Fallback: notify every doctor so someone picks it up
+        const { data: docs } = await supabase.from("user_roles").select("user_id").eq("role", "doctor");
+        if (docs && docs.length) {
+          await supabase.from("notifications").insert(
+            docs.map((d) => ({
+              user_id: d.user_id,
+              title: "New Appointment Request 🔔",
+              message: `${patientName} requested an appointment at ${formData.clinic} (${formData.department}) on ${dateStr} at ${formData.timeSlot}.`,
+              type: "new_request",
+              related_appointment_id: newApptId as string,
+            })),
+          );
+        }
+      }
 
       setAppointmentId(newApptId as string);
       setBooked(true);
