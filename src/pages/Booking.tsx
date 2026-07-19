@@ -169,7 +169,7 @@ const BookingTicket = ({ formData, date, appointmentId, onBookAnother }: {
 };
 
 const Booking = () => {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [date, setDate] = useState<Date>();
   const [booked, setBooked] = useState(false);
   const [appointmentId, setAppointmentId] = useState("");
